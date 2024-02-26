@@ -1,15 +1,18 @@
+// LIBS
 import { DrizzleAdapter } from "@auth/drizzle-adapter";
+import { eq } from "drizzle-orm";
 import {
   getServerSession,
   type DefaultSession,
   type NextAuthOptions,
 } from "next-auth";
 import { type Adapter } from "next-auth/adapters";
-import DiscordProvider from "next-auth/providers/discord";
+import GoogleProvider from "next-auth/providers/google";
 
+// UTILS
 import { env } from "~/env";
 import { db } from "~/server/db";
-import { createTable } from "~/server/db/schema";
+import { createTable, users, type UserRole } from "~/server/db/schema";
 
 /**
  * Module augmentation for `next-auth` types. Allows us to add custom properties to the `session`
@@ -21,15 +24,16 @@ declare module "next-auth" {
   interface Session extends DefaultSession {
     user: {
       id: string;
-      // ...other properties
-      // role: UserRole;
+      role?: UserRole | null;
     } & DefaultSession["user"];
   }
 
-  // interface User {
-  //   // ...other properties
-  //   // role: UserRole;
-  // }
+  export interface User {
+    name?: string | null;
+    email?: string | null;
+    image?: string | null;
+    role?: UserRole | null;
+  }
 }
 
 /**
@@ -39,19 +43,42 @@ declare module "next-auth" {
  */
 export const authOptions: NextAuthOptions = {
   callbacks: {
-    session: ({ session, user }) => ({
-      ...session,
-      user: {
-        ...session.user,
-        id: user.id,
-      },
-    }),
+    session: async ({ session, user }) => {
+      let dbUser;
+
+      if (!user.role) {
+        dbUser = await db.query.users.findFirst({
+          where: eq(users.id, user.id),
+        });
+      }
+
+      return {
+        ...session,
+        user: {
+          ...session.user,
+          id: user.id,
+
+          role: session?.user?.role
+            ? session.user.role
+            : dbUser?.role
+              ? dbUser.role
+              : null,
+        },
+      };
+    },
   },
   adapter: DrizzleAdapter(db, createTable) as Adapter,
   providers: [
-    DiscordProvider({
-      clientId: env.DISCORD_CLIENT_ID,
-      clientSecret: env.DISCORD_CLIENT_SECRET,
+    GoogleProvider({
+      clientId: env.GOOGLE_CLIENT_ID ? env.GOOGLE_CLIENT_ID : "",
+      clientSecret: env.GOOGLE_CLIENT_SECRET ? env.GOOGLE_CLIENT_SECRET : "",
+      authorization: {
+        params: {
+          prompt: "consent",
+          access_type: "offline",
+          response_type: "code",
+        },
+      },
     }),
     /**
      * ...add more providers here.

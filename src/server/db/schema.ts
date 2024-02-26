@@ -1,8 +1,11 @@
+// LIBS
 import { relations, sql } from "drizzle-orm";
 import {
   bigint,
+  boolean,
   index,
   int,
+  mysqlEnum,
   mysqlTableCreator,
   primaryKey,
   text,
@@ -11,30 +14,32 @@ import {
 } from "drizzle-orm/mysql-core";
 import { type AdapterAccount } from "next-auth/adapters";
 
+// UTILS
+import { type InferSqlTable, type Prettify } from "~/lib/type-utils";
+
+// CONSTS
+export const COLOR_THEMES = [
+  "bland",
+  "bumblebee",
+  "coffee",
+  "cupcake",
+  "forest",
+  "galaxy",
+  "lavender",
+  "valentine",
+] as const;
+export type ColorTheme = (typeof COLOR_THEMES)[number];
+
+export const USER_ROLES = ["ADMIN", "USER", "RESTRICTED"] as const;
+export type UserRole = (typeof USER_ROLES)[number];
+
 /**
  * This is an example of how to use the multi-project schema feature of Drizzle ORM. Use the same
  * database instance for multiple projects.
  *
  * @see https://orm.drizzle.team/docs/goodies#multi-project-schema
  */
-export const createTable = mysqlTableCreator((name) => `nebula-daze_${name}`);
-
-export const posts = createTable(
-  "post",
-  {
-    id: bigint("id", { mode: "number" }).primaryKey().autoincrement(),
-    name: varchar("name", { length: 256 }),
-    createdById: varchar("createdById", { length: 255 }).notNull(),
-    createdAt: timestamp("created_at")
-      .default(sql`CURRENT_TIMESTAMP`)
-      .notNull(),
-    updatedAt: timestamp("updatedAt").onUpdateNow(),
-  },
-  (example) => ({
-    createdByIdIdx: index("createdById_idx").on(example.createdById),
-    nameIndex: index("name_idx").on(example.name),
-  })
-);
+export const createTable = mysqlTableCreator((name) => `nebula_daze_${name}`);
 
 export const users = createTable("user", {
   id: varchar("id", { length: 255 }).notNull().primaryKey(),
@@ -45,6 +50,7 @@ export const users = createTable("user", {
     fsp: 3,
   }).default(sql`CURRENT_TIMESTAMP(3)`),
   image: varchar("image", { length: 255 }),
+  role: mysqlEnum("role", USER_ROLES).default(USER_ROLES[1]),
 });
 
 export const usersRelations = relations(users, ({ many }) => ({
@@ -52,6 +58,7 @@ export const usersRelations = relations(users, ({ many }) => ({
   sessions: many(sessions),
 }));
 
+export type Account = Prettify<InferSqlTable<typeof accounts>>;
 export const accounts = createTable(
   "account",
   {
@@ -74,7 +81,7 @@ export const accounts = createTable(
       columns: [account.provider, account.providerAccountId],
     }),
     userIdIdx: index("accounts_userId_idx").on(account.userId),
-  })
+  }),
 );
 
 export const accountsRelations = relations(accounts, ({ one }) => ({
@@ -92,7 +99,7 @@ export const sessions = createTable(
   },
   (session) => ({
     userIdIdx: index("session_userId_idx").on(session.userId),
-  })
+  }),
 );
 
 export const sessionsRelations = relations(sessions, ({ one }) => ({
@@ -108,5 +115,5 @@ export const verificationTokens = createTable(
   },
   (vt) => ({
     compoundKey: primaryKey({ columns: [vt.identifier, vt.token] }),
-  })
+  }),
 );
