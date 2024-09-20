@@ -32,15 +32,16 @@ declare module "next-auth" {
       role?: UserRole | null;
       colorTheme?: ColorTheme | null;
       ldTheme?: LdTheme | null;
-    } & DefaultSession["user"];
+      name?: string | null;
+    };
   }
 
   interface User {
     role?: UserRole | null;
     colorTheme?: ColorTheme | null;
     ldTheme?: LdTheme | null;
+    name?: string | null;
     // ...other properties
-    // role: UserRole;
   }
 }
 
@@ -56,6 +57,7 @@ export const authOptions: NextAuthOptions = {
       user: {
         ...session.user,
         id: user.id,
+        name: user.name,
         role: user.role,
         colorTheme: user.colorTheme,
         ldTheme: user.ldTheme,

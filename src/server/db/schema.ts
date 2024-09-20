@@ -28,7 +28,7 @@ export const COLOR_THEMES = [
 ] as const;
 export type ColorTheme = (typeof COLOR_THEMES)[number];
 
-export const ldThemes = ["light", "dark"] as const;
+export const ldThemes = ["system", "light", "dark"] as const;
 export type LdTheme = (typeof ldThemes)[number];
 
 export const USER_ROLES = ["ADMIN", "USER", "RESTRICTED"] as const;

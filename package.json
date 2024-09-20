@@ -40,6 +40,7 @@
     "nanoid": "^5.0.7",
     "next": "^14.2.4",
     "next-auth": "^4.24.7",
+    "next-themes": "^0.3.0",
     "postgres": "^3.4.4",
     "react": "^18.3.1",
     "react-day-picker": "8.10.1",
@@ -50,9 +51,11 @@
     "superjson": "^2.2.1",
     "tailwind-merge": "^2.5.2",
     "tailwindcss-animate": "^1.0.7",
+    "theme-change": "^2.5.0",
     "uploadthing": "^7.0.2",
     "vaul": "^0.9.4",
-    "zod": "^3.23.8"
+    "zod": "^3.23.8",
+    "zustand": "5.0.0-rc.2"
   },
   "devDependencies": {
     "@types/eslint": "^8.56.10",

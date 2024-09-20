@@ -1,12 +1,18 @@
+// LIBS
 import { Facebook, Instagram, ShoppingCart, Twitter } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+
+// UTILS
+import { getServerAuthSession } from "~/server/auth";
+import { HydrateClient } from "~/trpc/server";
+
+// COMPONENTS
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 
-import { HydrateClient } from "~/trpc/server";
-
 export default async function Home() {
+  const session = await getServerAuthSession();
   return (
     <HydrateClient>
       <main className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-b from-[#2e026d] to-[#15162c] text-white">
@@ -48,7 +54,8 @@ export default async function Home() {
               <div className="grid grid-cols-1 lg:grid-cols-2">
                 <div className="flex flex-col justify-center p-8 lg:p-12">
                   <h1 className="mb-4 text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl lg:text-6xl/none">
-                    Welcome to Acme Store
+                    Welcome{" "}
+                    {session?.user?.name ? session.user.name : "to Acme Store"}
                   </h1>
                   <p className="mb-6 max-w-[600px] text-gray-300 md:text-xl">
                     {`Discover our latest collection of high-quality merchandise.
