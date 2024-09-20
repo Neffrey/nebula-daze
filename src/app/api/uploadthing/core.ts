@@ -17,7 +17,11 @@ export const ourFileRouter = {
       const user = await getServerAuthSession();
 
       // If you throw, the user will not be able to upload
-      if (!user) throw new UploadThingError("Unauthorized");
+      if (!user)
+        throw new UploadThingError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Must be logged in to upload",
+        });
 
       // Whatever is returned here is accessible in onUploadComplete as `metadata`
       return { userId: user.user.id };
@@ -26,7 +30,7 @@ export const ourFileRouter = {
       // This code RUNS ON YOUR SERVER after upload
       console.log("Upload complete for userId:", metadata.userId);
 
-      console.log("file url", file.url);
+      // console.log("file url", file.url);
 
       // !!! Whatever is returned here is sent to the clientside `onClientUploadComplete` callback
       return { uploadedBy: metadata.userId };
