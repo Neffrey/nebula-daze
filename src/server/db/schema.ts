@@ -1,21 +1,19 @@
 // LIBS
 import { relations, sql } from "drizzle-orm";
 import {
-  bigint,
-  boolean,
   index,
-  int,
-  mysqlEnum,
-  mysqlTableCreator,
+  integer,
+  pgTableCreator,
   primaryKey,
   text,
   timestamp,
   varchar,
-} from "drizzle-orm/mysql-core";
+} from "drizzle-orm/pg-core";
+import { nanoid } from "nanoid";
 import { type AdapterAccount } from "next-auth/adapters";
 
 // UTILS
-import { type InferSqlTable, type Prettify } from "~/lib/type-utils";
+import { type InferSqlTable, type PrettyType } from "~/lib/type-utils";
 
 // CONSTS
 export const COLOR_THEMES = [
@@ -30,6 +28,9 @@ export const COLOR_THEMES = [
 ] as const;
 export type ColorTheme = (typeof COLOR_THEMES)[number];
 
+export const ldThemes = ["light", "dark"] as const;
+export type LdTheme = (typeof ldThemes)[number];
+
 export const USER_ROLES = ["ADMIN", "USER", "RESTRICTED"] as const;
 export type UserRole = (typeof USER_ROLES)[number];
 
@@ -39,38 +40,55 @@ export type UserRole = (typeof USER_ROLES)[number];
  *
  * @see https://orm.drizzle.team/docs/goodies#multi-project-schema
  */
-export const createTable = mysqlTableCreator((name) => `nebula_daze_${name}`);
+export const createTable = pgTableCreator((name) => `ndaze_${name}`);
 
+// USER TABLES
+export type DbUser = PrettyType<
+  InferSqlTable<typeof users> & {
+    accounts?: Account[];
+    profilePictures?: ProfilePicture[];
+  }
+>;
 export const users = createTable("user", {
-  id: varchar("id", { length: 255 }).notNull().primaryKey(),
+  id: varchar("id", { length: 255 })
+    .notNull()
+    .primaryKey()
+    .$defaultFn(() => crypto.randomUUID()),
   name: varchar("name", { length: 255 }),
   email: varchar("email", { length: 255 }).notNull(),
-  emailVerified: timestamp("emailVerified", {
+  emailVerified: timestamp("email_verified", {
     mode: "date",
-    fsp: 3,
-  }).default(sql`CURRENT_TIMESTAMP(3)`),
+    withTimezone: true,
+  }).default(sql`CURRENT_TIMESTAMP`),
   image: varchar("image", { length: 255 }),
-  role: mysqlEnum("role", USER_ROLES).default(USER_ROLES[1]),
+  role: text("role", { enum: USER_ROLES }).default(USER_ROLES[1]),
+  colorTheme: text("colorTheme", { enum: COLOR_THEMES }).default(
+    COLOR_THEMES[5],
+  ),
+  ldTheme: text("ldTheme", { enum: ldThemes }).default(ldThemes[1]),
 });
 
 export const usersRelations = relations(users, ({ many }) => ({
   accounts: many(accounts),
-  sessions: many(sessions),
 }));
 
-export type Account = Prettify<InferSqlTable<typeof accounts>>;
+export type Account = PrettyType<InferSqlTable<typeof accounts>>;
 export const accounts = createTable(
   "account",
   {
-    userId: varchar("userId", { length: 255 }).notNull(),
+    userId: varchar("user_id", { length: 255 })
+      .notNull()
+      .references(() => users.id),
     type: varchar("type", { length: 255 })
       .$type<AdapterAccount["type"]>()
       .notNull(),
     provider: varchar("provider", { length: 255 }).notNull(),
-    providerAccountId: varchar("providerAccountId", { length: 255 }).notNull(),
+    providerAccountId: varchar("provider_account_id", {
+      length: 255,
+    }).notNull(),
     refresh_token: text("refresh_token"),
     access_token: text("access_token"),
-    expires_at: int("expires_at"),
+    expires_at: integer("expires_at"),
     token_type: varchar("token_type", { length: 255 }),
     scope: varchar("scope", { length: 255 }),
     id_token: text("id_token"),
@@ -80,7 +98,7 @@ export const accounts = createTable(
     compoundKey: primaryKey({
       columns: [account.provider, account.providerAccountId],
     }),
-    userIdIdx: index("accounts_userId_idx").on(account.userId),
+    userIdIdx: index("account_user_id_idx").on(account.userId),
   }),
 );
 
@@ -91,14 +109,19 @@ export const accountsRelations = relations(accounts, ({ one }) => ({
 export const sessions = createTable(
   "session",
   {
-    sessionToken: varchar("sessionToken", { length: 255 })
+    sessionToken: varchar("session_token", { length: 255 })
       .notNull()
       .primaryKey(),
-    userId: varchar("userId", { length: 255 }).notNull(),
-    expires: timestamp("expires", { mode: "date" }).notNull(),
+    userId: varchar("user_id", { length: 255 })
+      .notNull()
+      .references(() => users.id),
+    expires: timestamp("expires", {
+      mode: "date",
+      withTimezone: true,
+    }).notNull(),
   },
   (session) => ({
-    userIdIdx: index("session_userId_idx").on(session.userId),
+    userIdIdx: index("session_user_id_idx").on(session.userId),
   }),
 );
 
@@ -107,13 +130,43 @@ export const sessionsRelations = relations(sessions, ({ one }) => ({
 }));
 
 export const verificationTokens = createTable(
-  "verificationToken",
+  "verification_token",
   {
     identifier: varchar("identifier", { length: 255 }).notNull(),
     token: varchar("token", { length: 255 }).notNull(),
-    expires: timestamp("expires", { mode: "date" }).notNull(),
+    expires: timestamp("expires", {
+      mode: "date",
+      withTimezone: true,
+    }).notNull(),
   },
   (vt) => ({
     compoundKey: primaryKey({ columns: [vt.identifier, vt.token] }),
+  }),
+);
+
+// CUSTOM ACCOUNT TABLES
+
+export type ProfilePicture = PrettyType<
+  InferSqlTable<typeof profilePictures> & {
+    user?: DbUser[];
+  }
+>;
+export const profilePictures = createTable(
+  "profilePicture",
+  {
+    id: text("id")
+      .notNull()
+      .primaryKey()
+      .$default(() => nanoid(12)),
+    user: text("user")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    url: text("url").notNull(),
+    createdAt: timestamp("createdAt", {
+      mode: "date",
+    }).default(sql`CURRENT_TIMESTAMP`),
+  },
+  (profilePicture) => ({
+    idIndex: index("pp_id_Index").on(profilePicture.id),
   }),
 );

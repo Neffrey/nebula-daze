@@ -1,6 +1,4 @@
-// LIBS
 import { DrizzleAdapter } from "@auth/drizzle-adapter";
-import { eq } from "drizzle-orm";
 import {
   getServerSession,
   type DefaultSession,
@@ -9,10 +7,17 @@ import {
 import { type Adapter } from "next-auth/adapters";
 import GoogleProvider from "next-auth/providers/google";
 
-// UTILS
 import { env } from "~/env";
 import { db } from "~/server/db";
-import { createTable, users, type UserRole } from "~/server/db/schema";
+import {
+  accounts,
+  sessions,
+  users,
+  verificationTokens,
+  type ColorTheme,
+  type LdTheme,
+  type UserRole,
+} from "~/server/db/schema";
 
 /**
  * Module augmentation for `next-auth` types. Allows us to add custom properties to the `session`
@@ -25,14 +30,17 @@ declare module "next-auth" {
     user: {
       id: string;
       role?: UserRole | null;
+      colorTheme?: ColorTheme | null;
+      ldTheme?: LdTheme | null;
     } & DefaultSession["user"];
   }
 
-  export interface User {
-    name?: string | null;
-    email?: string | null;
-    image?: string | null;
+  interface User {
     role?: UserRole | null;
+    colorTheme?: ColorTheme | null;
+    ldTheme?: LdTheme | null;
+    // ...other properties
+    // role: UserRole;
   }
 }
 
@@ -43,31 +51,23 @@ declare module "next-auth" {
  */
 export const authOptions: NextAuthOptions = {
   callbacks: {
-    session: async ({ session, user }) => {
-      let dbUser;
-
-      if (!user.role) {
-        dbUser = await db.query.users.findFirst({
-          where: eq(users.id, user.id),
-        });
-      }
-
-      return {
-        ...session,
-        user: {
-          ...session.user,
-          id: user.id,
-
-          role: session?.user?.role
-            ? session.user.role
-            : dbUser?.role
-              ? dbUser.role
-              : null,
-        },
-      };
-    },
+    session: ({ session, user }) => ({
+      ...session,
+      user: {
+        ...session.user,
+        id: user.id,
+        role: user.role,
+        colorTheme: user.colorTheme,
+        ldTheme: user.ldTheme,
+      },
+    }),
   },
-  adapter: DrizzleAdapter(db, createTable) as Adapter,
+  adapter: DrizzleAdapter(db, {
+    usersTable: users,
+    accountsTable: accounts,
+    sessionsTable: sessions,
+    verificationTokensTable: verificationTokens,
+  }) as Adapter,
   providers: [
     GoogleProvider({
       clientId: env.GOOGLE_CLIENT_ID ? env.GOOGLE_CLIENT_ID : "",
