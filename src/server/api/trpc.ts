@@ -90,7 +90,7 @@ export const createTRPCRouter = t.router;
 /** Reusable middleware that enforces users are logged in before running the procedure. */
 
 const enforceUserIsAuthed = t.middleware(({ ctx, next }) => {
-  if (!ctx?.session ?? !ctx?.session?.user) {
+  if (!ctx?.session?.user) {
     throw new TRPCError({ code: "UNAUTHORIZED" });
   }
   return next({
@@ -118,11 +118,7 @@ const enforceUserIsNotRestricted = t.middleware(({ ctx, next }) => {
 });
 
 const enforceUserIsAdmin = t.middleware(({ ctx, next }) => {
-  if (
-    !ctx?.session ??
-    !ctx?.session?.user ??
-    ctx?.session?.user?.role !== "ADMIN"
-  ) {
+  if (!ctx?.session?.user ?? ctx?.session?.user?.role !== "ADMIN") {
     throw new TRPCError({ code: "UNAUTHORIZED" });
   }
   return next({
