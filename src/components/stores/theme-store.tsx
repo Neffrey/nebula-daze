@@ -4,31 +4,39 @@
 import { create } from "zustand";
 
 // UTILS
-import { COLOR_THEMES, type ColorTheme } from "~/server/db/schema";
+import {
+  COLOR_THEMES,
+  type ColorTheme,
+  LD_THEMES,
+  type LdTheme,
+} from "~/server/db/schema";
+
+// COMPONENTS
 
 export interface ThemeStoreType {
-  cashDrawer: boolean;
-  setCashDrawer: (cashDrawer: boolean) => void;
   colorTheme: ColorTheme;
   setColorTheme: (colorTheme: ColorTheme) => void;
-  themeList: ColorTheme[];
+  colorThemeList: ColorTheme[];
+  ldTheme: LdTheme;
+  setLdTheme: (ldTheme: LdTheme) => void;
 }
 
 const useThemeStore = create<ThemeStoreType>((set) => ({
-  cashDrawer: false,
-  setCashDrawer: (cashDrawer) => {
-    set(() => ({
-      cashDrawer,
-    }));
-  },
-  colorTheme: "galaxy",
+  colorTheme: COLOR_THEMES[5],
   setColorTheme: (colorTheme) => {
     set(() => ({
       colorTheme,
     }));
     window.localStorage.setItem("theme", colorTheme);
   },
-  themeList: [...COLOR_THEMES],
+  colorThemeList: [...COLOR_THEMES],
+  ldTheme: LD_THEMES[1],
+  setLdTheme: (ldTheme) => {
+    set(() => ({
+      ldTheme,
+    }));
+    window.localStorage.setItem("ld-theme", ldTheme);
+  },
 }));
 
 export default useThemeStore;

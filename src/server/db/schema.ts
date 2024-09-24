@@ -28,8 +28,8 @@ export const COLOR_THEMES = [
 ] as const;
 export type ColorTheme = (typeof COLOR_THEMES)[number];
 
-export const ldThemes = ["system", "light", "dark"] as const;
-export type LdTheme = (typeof ldThemes)[number];
+export const LD_THEMES = ["system", "light", "dark"] as const;
+export type LdTheme = (typeof LD_THEMES)[number];
 
 export const USER_ROLES = ["ADMIN", "USER", "RESTRICTED"] as const;
 export type UserRole = (typeof USER_ROLES)[number];
@@ -65,7 +65,7 @@ export const users = createTable("user", {
   colorTheme: text("colorTheme", { enum: COLOR_THEMES }).default(
     COLOR_THEMES[5],
   ),
-  ldTheme: text("ldTheme", { enum: ldThemes }).default(ldThemes[1]),
+  ldTheme: text("ldTheme", { enum: LD_THEMES }).default(LD_THEMES[1]),
 });
 
 export const usersRelations = relations(users, ({ many }) => ({

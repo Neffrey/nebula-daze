@@ -11,7 +11,7 @@ import {
   createTRPCRouter,
   protectedUserProcedure,
 } from "~/server/api/trpc";
-import { COLOR_THEMES, ldThemes, users } from "~/server/db/schema";
+import { COLOR_THEMES, LD_THEMES, users } from "~/server/db/schema";
 
 export const userRouter = createTRPCRouter({
   get: basicUserProcedure.query(async ({ ctx }) => {
@@ -28,7 +28,7 @@ export const userRouter = createTRPCRouter({
           .optional(),
         image: z.string().url().optional(),
         showCompletedSetting: z.boolean().optional(),
-        ldTheme: z.ZodEnum.create(ldThemes).optional(),
+        ldTheme: z.ZodEnum.create(LD_THEMES).optional(),
         colorTheme: z.ZodEnum.create(COLOR_THEMES).optional(),
       }),
     )

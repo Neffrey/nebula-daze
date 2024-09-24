@@ -1,30 +1,40 @@
 "use client";
 
 // LIBS
+import { useSession } from "next-auth/react";
 import { ThemeProvider as NextThemesProvider } from "next-themes";
 import { type ThemeProviderProps } from "next-themes/dist/types";
-// import { type UserSession } from "~/server/auth";
-// import { type Session } from "next-auth";
-import { type Session } from "node_modules/next-auth/core/types";
-import { useLayoutEffect, useState } from "react";
+import { useLayoutEffect } from "react";
 
 // UTILS
-import { type LdTheme, ldThemes } from "~/server/db/schema";
+import useThemeStore from "~/components/stores/theme-store";
+import { type LdTheme, LD_THEMES } from "~/server/db/schema";
 
-// CONSTS
-const DEFAULT_LD_THEME = ldThemes[0];
+const LightDarkProvider = ({ children }: ThemeProviderProps) => {
+  const ldTheme = useThemeStore((state) => state.ldTheme);
+  const setLdTheme = useThemeStore((state) => state.setLdTheme);
 
-interface LightDarkProviderProps extends ThemeProviderProps {
-  session: Session | null;
-}
+  const { data: session } = useSession();
 
-const LightDarkProvider = ({ children, session }: LightDarkProviderProps) => {
-  const [ldTheme, setLdTheme] = useState<LdTheme>(DEFAULT_LD_THEME);
+  const checkIsDarkSchemePreferred = () =>
+    window?.matchMedia?.("(prefers-color-scheme:dark)")?.matches ?? false;
 
   // set default LD theme
   useLayoutEffect(() => {
-    if (session?.user?.ldTheme) {
-      setLdTheme(session.user.ldTheme);
+    const localLdTheme = window?.localStorage?.getItem("ld-theme") as LdTheme;
+
+    // setLdTheme if user is not authed
+    if (!session?.user?.ldTheme) {
+      if (localLdTheme && LD_THEMES.includes(localLdTheme)) {
+        setLdTheme(localLdTheme);
+      }
+      if (!localLdTheme) {
+        if (checkIsDarkSchemePreferred()) {
+          setLdTheme(LD_THEMES[2]);
+        } else {
+          setLdTheme(LD_THEMES[1]);
+        }
+      }
     }
   }, [session, ldTheme, setLdTheme]);
 

@@ -30,6 +30,7 @@ declare module "next-auth" {
     user: {
       id: string;
       role?: UserRole | null;
+      image?: string | null;
       colorTheme?: ColorTheme | null;
       ldTheme?: LdTheme | null;
       name?: string | null;
@@ -38,6 +39,7 @@ declare module "next-auth" {
 
   interface User {
     role?: UserRole | null;
+    image?: string | null;
     colorTheme?: ColorTheme | null;
     ldTheme?: LdTheme | null;
     name?: string | null;
@@ -59,6 +61,7 @@ export const authOptions: NextAuthOptions = {
         id: user.id,
         name: user.name,
         role: user.role,
+        image: user.image,
         colorTheme: user.colorTheme,
         ldTheme: user.ldTheme,
       },

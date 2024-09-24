@@ -1,25 +1,28 @@
 "use client";
 
-// LIBRARIES
+// LIBS
 import { useTheme } from "next-themes";
+import { type NextFontWithVariable } from "next/dist/compiled/@next/font";
 import { type Session } from "node_modules/next-auth/core/types";
-import { type ReactNode, useLayoutEffect, useState } from "react";
+import { type ReactNode, useLayoutEffect } from "react";
 import { themeChange } from "theme-change";
 
 // UTILS
+import useThemeStore from "~/components/stores/theme-store";
 
 // COMPONENTS
-import { type ColorTheme } from "~/server/db/schema";
 
 type Props = {
   children: ReactNode;
   session: Session | null;
+  fonts?: NextFontWithVariable[];
 };
 
-const HtmlWrapper = ({ children, session }: Props) => {
+const HtmlWrapper = ({ children, session, fonts }: Props) => {
   // Color Mode
   const { theme: LdTheme } = useTheme();
-  const [colorTheme, setColorTheme] = useState<ColorTheme>("galaxy");
+  const colorTheme = useThemeStore((state) => state.colorTheme);
+  const setColorTheme = useThemeStore((state) => state.setColorTheme);
 
   // No SSR for themeChange
   useLayoutEffect(() => {
@@ -31,14 +34,15 @@ const HtmlWrapper = ({ children, session }: Props) => {
     if (session?.user?.colorTheme) {
       setColorTheme(session.user.colorTheme);
     }
-  }, [session]);
+  }, [session, setColorTheme]);
 
   return (
     <html
       lang="en"
       suppressHydrationWarning
       data-theme={colorTheme}
-      className={LdTheme}
+      // className={LdTheme}
+      className={`${LdTheme} ${fonts?.map((font) => font.variable).join(" ")}`}
     >
       {children}
     </html>
