@@ -102,7 +102,10 @@ const enforceUserIsAuthed = t.middleware(({ ctx, next }) => {
 });
 
 const enforceUserIsNotRestricted = t.middleware(({ ctx, next }) => {
-  if (!ctx.session?.user ?? ctx.session.user.role === "RESTRICTED") {
+  if (!ctx.session?.user) {
+    throw new TRPCError({ code: "UNAUTHORIZED" });
+  }
+  if (ctx.session?.user?.role === "RESTRICTED") {
     throw new TRPCError({ code: "UNAUTHORIZED" });
   }
   return next({
@@ -114,7 +117,10 @@ const enforceUserIsNotRestricted = t.middleware(({ ctx, next }) => {
 });
 
 const enforceUserIsAdmin = t.middleware(({ ctx, next }) => {
-  if (!ctx.session?.user ?? ctx.session?.user?.role !== "ADMIN") {
+  if (!ctx.session?.user) {
+    throw new TRPCError({ code: "UNAUTHORIZED" });
+  }
+  if (ctx.session?.user?.role !== "ADMIN") {
     throw new TRPCError({ code: "UNAUTHORIZED" });
   }
   return next({
