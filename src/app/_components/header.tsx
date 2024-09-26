@@ -21,9 +21,6 @@ const Header = () => {
         >
           <NeffreyLogo />
         </div>
-        <h1 className="text-lg font-semibold text-primary-foreground sm:text-xl md:text-2xl lg:text-4xl">
-          Nebula Daze
-        </h1>
       </Link>
       <NavMenu />
     </StickyScrollBar>

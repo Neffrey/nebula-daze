@@ -21,7 +21,7 @@ export default async function Home() {
             <div className="relative flex w-full flex-col flex-wrap items-center justify-center overflow-hidden lg:col-span-3">
               <ParallaxHero className="z-0" />
               <div className="z-10 flex h-full w-full flex-col items-center justify-center gap-5">
-                <h1 className="w-full text-center text-5xl font-extrabold tracking-wider text-foreground sm:text-[5rem]">
+                <h1 className="font-display w-full text-center text-5xl tracking-wider text-foreground sm:text-[5rem]">
                   Nebula Daze
                 </h1>
                 <div className="w-full text-center text-xl tracking-wider text-foreground">

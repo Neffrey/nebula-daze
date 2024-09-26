@@ -10,7 +10,12 @@ const config = {
   theme: {
     extend: {
       fontFamily: {
-        sans: ["var(--font-geist-sans)", ...fontFamily.sans],
+        sans: ["var(--font-roboto)", ...fontFamily.sans],
+        display: [
+          "var(--font-titillium-web)",
+          "var(--font-roboto)",
+          ...fontFamily.sans,
+        ],
       },
       borderRadius: {
         lg: "var(--radius)",

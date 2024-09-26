@@ -32,7 +32,10 @@ const NavMenu = () => {
       {navItems.map((item) => {
         return (
           <Link href={item.href} tabIndex={-1} key={item.title}>
-            <Button variant={"ghost"} className="text-primary-foreground">
+            <Button
+              variant={"ghost"}
+              className="font-display uppercase tracking-widest text-primary-foreground"
+            >
               {item.title}
             </Button>
           </Link>

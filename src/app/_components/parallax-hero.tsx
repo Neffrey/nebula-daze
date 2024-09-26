@@ -11,7 +11,7 @@ import useWindowDimensions from "~/components/hooks/use-window-dimensions";
 import { cn } from "~/lib/utils";
 
 // ASSETS
-import AuroraOverTheLake from "public/aurora-over-the-lake.jpg";
+import HelixNebula from "public/helix-nebula.webp";
 import StarryParallax from "public/starry-parallax.jpg";
 
 // CONSTS
@@ -51,13 +51,13 @@ const ParallaxHero = ({ className = "" }: { className?: string }) => {
       )}
     >
       <Image
-        src={AuroraOverTheLake}
+        src={HelixNebula}
         alt="Aurora of lake - Ai generated background image"
         fill
         className={`w-full object-cover`}
       />
       <div
-        className={`absolute inset-0 left-0 bg-slate-900/50 mix-blend-multiply`}
+        className={`absolute inset-0 left-0 bg-slate-900/45 mix-blend-multiply`}
       />
       <Image
         src={StarryParallax}

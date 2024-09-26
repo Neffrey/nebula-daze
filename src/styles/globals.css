@@ -2,18 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 @layer base {
-  html {
-    font-family: var(--font-roboto);
-  }
-  h1,
-  h2,
-  h3,
-  h4,
-  h5,
-  h6 {
-    font-family: var(--font-titillium-web);
-    letter-spacing: 0.17rem;
-  }
   :root {
     --background: 0 0% 100%;
     --foreground: 222.2 84% 4.9%;
