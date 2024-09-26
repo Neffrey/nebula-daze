@@ -11,6 +11,8 @@
 [ ] - Product listings single page
 [ ] - Product listings group page
 
+[ ] - Shopping cart
+
 [ ] - FAQs
 [ ] - Privacy Policy
 [ ] - Return Policy
