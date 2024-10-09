@@ -5,6 +5,7 @@ import { HydrateClient } from "~/trpc/server";
 // COMPONENTS
 import ProtectedContent from "~/components/protectedContent";
 import { Card } from "~/components/ui/card";
+import AdminForceSync from "./_components/admin-force-sync";
 import LogoutButton from "./_components/logout-button";
 import NameChangeDialog from "./_components/name-change-dialog";
 import ProfPicChangeDialog from "./_components/prof-pic-change-dialog";
@@ -30,6 +31,7 @@ const AccountPage = async () => {
             // SETTINGS
             className="flex w-full flex-col items-center justify-center gap-6"
           >
+            <AdminForceSync />
             <div
               // THEME
               className="flex w-full flex-col items-center gap-6"

@@ -3,6 +3,9 @@ import { relations, sql } from "drizzle-orm";
 import {
   index,
   integer,
+  jsonb,
+  numeric,
+  pgEnum,
   pgTableCreator,
   primaryKey,
   text,
@@ -170,3 +173,142 @@ export const profilePictures = createTable(
     idIndex: index("pp_id_Index").on(profilePicture.id),
   }),
 );
+
+// ORDER TABLES
+
+const LineItemStatusesEnum = pgEnum("line_item_statuses", [
+  "on-hold",
+  "in-production",
+  "sending-to-production",
+  "has-issues",
+  "fulfilled",
+  "canceled",
+]);
+
+const OrderStatusesEnum = pgEnum("order_statuses", [
+  "pending",
+  "partially-fulfilled",
+  "payment-not-received",
+  "had-issues",
+  ...LineItemStatusesEnum.enumValues,
+]);
+
+const ShippingMethodsEnum = pgEnum("shipping_methods", ["1", "2", "3", "4"]);
+
+export const defaultShipment = {
+  carrier: "",
+  number: "",
+  url: "",
+  delivered_at: "",
+};
+
+export type OrderAddressTo = {
+  first_name: string;
+  last_name: string;
+  email: string;
+  phone: string;
+  country: string;
+  region: string;
+  address1: string;
+  address2: string;
+  city: string;
+  zip: string;
+};
+
+export type LineItemMetaData = {
+  title: string;
+  price: number;
+  variant_label: string;
+  sku: string;
+  country: string;
+};
+
+export type OrderLineItem = {
+  variant_id?: string;
+  quantity?: number;
+  print_provider_id?: number;
+  title?: string;
+  sku?: string;
+  variantTitle?: string;
+  variantId?: string;
+  metadata?: LineItemMetaData;
+  status?: (typeof LineItemStatusesEnum.enumValues)[number];
+};
+
+export type Order = PrettyType<InferSqlTable<typeof orders>>;
+export const orders = createTable(
+  "order",
+  {
+    id: text("id")
+      .notNull()
+      .primaryKey()
+      .$default(() => nanoid(12)),
+    userId: text("userId")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    addressTo: jsonb("addressTo").$type<OrderAddressTo>().notNull(),
+    lineItems: jsonb("lineItems").array().$type<OrderLineItem[]>().notNull(),
+    totalPrice: numeric("total_price").$type<number>().notNull(),
+    totalShipping: numeric("total_shipping").$type<number>().notNull(),
+    totalTax: numeric("total_tax").$type<number>().notNull(),
+    status: OrderStatusesEnum("status").default("pending"),
+    shippingMethod: ShippingMethodsEnum("shipping_method").default("1"),
+    shipments: jsonb("shipments")
+      .$type<typeof defaultShipment>()
+      .default(defaultShipment),
+    createdAt: timestamp("createdAt", {
+      mode: "date",
+    }).default(sql`CURRENT_TIMESTAMP`),
+  },
+  (order) => ({
+    idIndex: index("order_id_Index").on(order.id),
+    userIndex: index("order_user_Index").on(order.userId),
+  }),
+);
+
+export type ProductVariants = {
+  id: string;
+  sku: string;
+  cost?: number;
+  price?: number;
+  title?: string;
+  grams?: number;
+  is_enabled?: boolean;
+  is_default?: boolean;
+  is_available?: boolean;
+  is_printify_express_eligible?: boolean;
+};
+
+export type ProductOptions = {
+  name?: string;
+  type?: string;
+  values?: {
+    id?: number;
+    title?: string;
+  }[];
+};
+
+export type Product = PrettyType<InferSqlTable<typeof products>>;
+export const products = createTable("product", {
+  id: text("id")
+    .notNull()
+    .primaryKey()
+    .$default(() => nanoid(12)),
+  title: text("title").notNull(),
+  description: text("description").notNull(),
+  tags: text("tags").array().$type<string[]>().default([]),
+  options: jsonb("options").array().$type<ProductOptions[]>().default([]),
+  variants: jsonb("variants").array().$type<ProductVariants[]>().default([]),
+});
+
+export type ProductsResponseData = {
+  current_page?: number;
+  from?: number;
+  first_page_url?: string;
+  to?: number;
+  last_page?: number;
+  last_page_url?: string;
+  per_page?: number;
+  total?: number;
+  data?: Product[];
+};
