@@ -21,6 +21,11 @@ const navItems: NavItems = [
     href: "/account",
     authedRoles: ["ADMIN", "RESTRICTED", "USER"],
   },
+  {
+    title: "Shop",
+    href: "/shop",
+    // authedRoles: ["ADMIN", "RESTRICTED", "USER"],
+  },
 ];
 
 const NavMenu = () => {

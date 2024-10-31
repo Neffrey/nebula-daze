@@ -31,7 +31,10 @@ const ProductCard = ({ product }: { product: Product }) => {
         <CardTitle className="mb-2 text-lg">{product.title}</CardTitle>
         {product?.variants ? (
           <p className="mb-2 text-xl font-bold sm:text-2xl">
-            ${product?.variants[0]?.price}
+            $
+            {product?.variants[0]?.price
+              ? Math.floor(product?.variants[0].price / 100)
+              : 0}
           </p>
         ) : null}
         {/* Rating Stars */}

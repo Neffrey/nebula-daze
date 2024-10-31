@@ -4,20 +4,23 @@
 import { useState } from "react";
 
 // UTILS
-import { type ProductsResponseData } from "~/server/db/schema";
+import useProductStore from "../stores/product-store";
 import ProductCard from "./product-card";
 
 // COMPONENTS
+import { Button } from "~/components/ui/button";
 
-const ProductArchive = ({ products }: { products: ProductsResponseData }) => {
+const ProductArchive = () => {
+  const products = useProductStore((state) => state.data);
+
   const allTags = Array.from(
-    new Set(products.data?.flatMap((product) => product.tags)),
+    new Set(products.flatMap((product) => product.tags)),
   );
 
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
 
-  const filteredProducts = products?.data?.filter((product) => {
+  const filteredProducts = products?.filter((product) => {
     const matchesSearch = product?.title
       ?.toLowerCase()
       .includes(searchTerm.toLowerCase());
@@ -46,12 +49,18 @@ const ProductArchive = ({ products }: { products: ProductsResponseData }) => {
     //     <h3>Products ArrLength: {products.data?.length ?? "Still Loading"}</h3>
     //   </div>
     // </div>
-
-    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-6 lg:grid-cols-3">
-      {filteredProducts?.map((product) => (
-        <ProductCard key={product.id} product={product} />
-      ))}
-    </div>
+    <>
+      <div>
+        <Button onClick={() => console.log("products: ", filteredProducts)}>
+          Log Filtered Products
+        </Button>
+      </div>
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-6 lg:grid-cols-3">
+        {filteredProducts?.map((product) => (
+          <ProductCard key={product.id} product={product} />
+        ))}
+      </div>
+    </>
   );
 };
 

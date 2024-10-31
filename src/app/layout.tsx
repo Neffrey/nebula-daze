@@ -84,7 +84,7 @@ const RootLayout = async ({
                   <Header />
                   <main className="flex min-h-screen w-full flex-col items-center">
                     {children}
-                    <ProductArchive products={productsData} />
+                    <ProductArchive />
                   </main>
                   <Footer />
                   <Toaster />
