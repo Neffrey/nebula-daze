@@ -176,7 +176,7 @@ export const profilePictures = createTable(
 
 // ORDER TABLES
 
-const LineItemStatusesEnum = pgEnum("line_item_statuses", [
+export const LineItemStatusesEnum = pgEnum("line_item_statuses", [
   "on-hold",
   "in-production",
   "sending-to-production",
@@ -185,7 +185,7 @@ const LineItemStatusesEnum = pgEnum("line_item_statuses", [
   "canceled",
 ]);
 
-const OrderStatusesEnum = pgEnum("order_statuses", [
+export const OrderStatusesEnum = pgEnum("order_statuses", [
   "pending",
   "partially-fulfilled",
   "payment-not-received",
@@ -193,7 +193,12 @@ const OrderStatusesEnum = pgEnum("order_statuses", [
   ...LineItemStatusesEnum.enumValues,
 ]);
 
-const ShippingMethodsEnum = pgEnum("shipping_methods", ["1", "2", "3", "4"]);
+export const ShippingMethodsEnum = pgEnum("shipping_methods", [
+  "1",
+  "2",
+  "3",
+  "4",
+]);
 
 export const defaultShipment = {
   carrier: "",
