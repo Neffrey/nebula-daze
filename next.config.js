@@ -16,6 +16,10 @@ const config = {
         protocol: "https",
         hostname: "utfs.io",
       },
+      {
+        protocol: "https",
+        hostname: "images-api.printify.com",
+      },
     ],
   },
   reactStrictMode: true,
