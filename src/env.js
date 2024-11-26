@@ -35,6 +35,7 @@ export const env = createEnv({
     POSTGRES_PASSWORD: z.string(),
     POSTGRES_DATABASE: z.string(),
     PRINTIFY_KEY: z.string(),
+    PRINTIFY_SHOP_ID: z.string(),
   },
 
   /**
@@ -68,6 +69,7 @@ export const env = createEnv({
     POSTGRES_PASSWORD: process.env.POSTGRES_PASSWORD,
     POSTGRES_DATABASE: process.env.POSTGRES_DATABASE,
     PRINTIFY_KEY: process.env.PRINTIFY_KEY,
+    PRINTIFY_SHOP_ID: process.env.PRINTIFY_SHOP_ID,
   },
   /**
    * Run `build` or `dev` with `SKIP_ENV_VALIDATION` to skip env validation. This is especially

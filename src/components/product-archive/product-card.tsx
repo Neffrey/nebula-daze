@@ -2,9 +2,12 @@
 
 // LIBS
 import { ShoppingCart } from "lucide-react";
+import Image from "next/image";
+import { useState } from "react";
 
 // UTILS
-import { type Product } from "~/server/db/schema";
+import { type ProductUpdate } from "~/lib/printify-sdk";
+
 // COMPONENTS
 import { Button } from "~/components/ui/button";
 import {
@@ -15,17 +18,19 @@ import {
   CardTitle,
 } from "~/components/ui/card";
 
-const ProductCard = ({ product }: { product: Product }) => {
+const ProductCard = ({ product }: { product: ProductUpdate }) => {
+  const [currentImageIndex, setCurrentImageIndex] = useState<number>(0);
+
   return (
     <Card key={product.id} className="flex flex-col justify-between">
       <CardHeader className="p-4">
-        {/* <Image
-              src={product
-              alt={product.title}
-              width={200}
-              height={200}
-              className="w-full h-40 sm:h-48 object-cover rounded-md"
-            /> */}
+        <Image
+          src={product.images[currentImageIndex]?.src ?? ""}
+          alt={product.title}
+          width={200}
+          height={200}
+          className="w-4/5 self-center rounded-md object-cover"
+        />
       </CardHeader>
       <CardContent className="p-4">
         <CardTitle className="mb-2 text-lg">{product.title}</CardTitle>

@@ -3,7 +3,6 @@ import { relations, sql } from "drizzle-orm";
 import {
   index,
   integer,
-  jsonb,
   numeric,
   pgEnum,
   pgTableCreator,
@@ -251,16 +250,16 @@ export const orders = createTable(
     userId: text("userId")
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
-    addressTo: jsonb("addressTo").$type<OrderAddressTo>().notNull(),
-    lineItems: jsonb("lineItems").array().$type<OrderLineItem[]>().notNull(),
+    // addressTo: jsonb("addressTo").$type<OrderAddressTo>().notNull(),
+    // lineItems: jsonb("lineItems").array().$type<OrderLineItem[]>().notNull(),
     totalPrice: numeric("total_price").$type<number>().notNull(),
     totalShipping: numeric("total_shipping").$type<number>().notNull(),
     totalTax: numeric("total_tax").$type<number>().notNull(),
     status: OrderStatusesEnum("status").default("pending"),
     shippingMethod: ShippingMethodsEnum("shipping_method").default("1"),
-    shipments: jsonb("shipments")
-      .$type<typeof defaultShipment>()
-      .default(defaultShipment),
+    // shipments: jsonb("shipments")
+    //   .$type<typeof defaultShipment>()
+    //   .default(defaultShipment),
     createdAt: timestamp("createdAt", {
       mode: "date",
     }).default(sql`CURRENT_TIMESTAMP`),
@@ -270,6 +269,14 @@ export const orders = createTable(
     userIndex: index("order_user_Index").on(order.userId),
   }),
 );
+
+export type ProductImages = {
+  is_default?: boolean;
+  is_selected_for_publishing?: boolean;
+  position?: string;
+  src?: string;
+  variantIds?: string[];
+};
 
 export type ProductVariants = {
   id: string;
@@ -302,8 +309,9 @@ export const products = createTable("product", {
   title: text("title").notNull(),
   description: text("description").notNull(),
   tags: text("tags").array().$type<string[]>().default([]),
-  options: jsonb("options").array().$type<ProductOptions[]>().default([]),
-  variants: jsonb("variants").array().$type<ProductVariants[]>().default([]),
+  // images: jsonb("images").array().$type<ProductImages[]>().default([]),
+  // options: jsonb("options").array().$type<ProductOptions[]>().default([]),
+  // variants: jsonb("variants").array().$type<ProductVariants[]>().default([]),
 });
 
 export type ProductsResponseData = {

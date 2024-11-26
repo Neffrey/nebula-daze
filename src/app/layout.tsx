@@ -3,8 +3,6 @@ import "~/styles/globals.css";
 
 // import { fetch } from ""
 
-import { env } from "~/env";
-
 const titilliumWeb = Titillium_Web({
   subsets: ["latin"],
   weight: "700",
@@ -26,8 +24,8 @@ import { extractRouterConfig } from "uploadthing/server";
 
 // UTILS
 import { ourFileRouter } from "~/app/api/uploadthing/core";
+import { printify } from "~/lib/printify-sdk";
 import { getServerAuthSession } from "~/server/auth";
-import { type ProductsResponseData } from "~/server/db/schema";
 import { TRPCReactProvider } from "~/trpc/react";
 
 // COMPONENTS
@@ -54,15 +52,17 @@ const RootLayout = async ({
 }: Readonly<{ children: React.ReactNode }>) => {
   const session = await getServerAuthSession();
 
-  const productsFetch = await fetch(
-    // `https://api.printify.com/v1/shops.json`,
-    `https://api.printify.com/v1/shops/8332896/products.json?limit=50`,
-    {
-      headers: { Authorization: `Bearer ${env.PRINTIFY_KEY}` },
-    },
-  );
+  const products = await printify.products.list({ limit: 50 });
+  // await fetch(
+  // `https://api.printify.com/v1/shops.json`,
+  // `https://api.printify.com/v1/shops/8332896/products.json?limit=50`,
+  // {
+  //   headers: { Authorization: `Bearer ${env.PRINTIFY_KEY}` },
+  // },
+  // );
 
-  const productsData = (await productsFetch.json()) as ProductsResponseData;
+  // const productsData = (await productsFetch);
+  // const productsData = (await productsFetch.json()) as ProductsResponseData;
 
   return (
     <SessionProvider>
@@ -72,7 +72,7 @@ const RootLayout = async ({
           <TRPCReactProvider>
             <LightDarkProvider>
               <DefaultColorTheme />
-              <ProductStoreProvider products={productsData}>
+              <ProductStoreProvider products={products}>
                 <UseOnRender
                   fallback={
                     <div className="absolute flex h-full w-full flex-col items-center justify-center gap-10 bg-cyan-800 text-slate-50">
