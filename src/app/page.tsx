@@ -1,86 +1,37 @@
-// LIBS
-import Image from "next/image";
-
-// UTILS
-import { getServerAuthSession } from "~/server/auth";
-import { HydrateClient } from "~/trpc/server";
-
-// COMPONENTS
 import Link from "next/link";
-import { Button } from "~/components/ui/button";
-import { Input } from "~/components/ui/input";
-import ParallaxHero from "./_components/parallax-hero";
 
-export default async function Home() {
-  const session = await getServerAuthSession();
+export default function HomePage() {
   return (
-    <HydrateClient>
-      <section className="w-full bg-black text-white">
-        <div className="container mx-auto">
-          <div className="grid grid-cols-1 lg:grid-cols-5">
-            <div className="relative flex w-full flex-col flex-wrap items-center justify-center overflow-hidden lg:col-span-3">
-              <ParallaxHero className="z-0" />
-              <div className="z-10 flex h-full w-full flex-col items-center justify-center gap-5">
-                <h1 className="font-display w-full text-center text-5xl tracking-wider text-foreground sm:text-[5rem]">
-                  Nebula Daze
-                </h1>
-                <div className="w-full text-center text-xl tracking-wider text-foreground">
-                  Otherworldy merch with psychadelic vibes
-                </div>
-                <Link href="/shop">
-                  <Button>
-                    <h2 className="font-4xl">Shop Now</h2>
-                  </Button>
-                </Link>
-              </div>
+    <main className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-b from-[#2e026d] to-[#15162c] text-white">
+      <div className="container flex flex-col items-center justify-center gap-12 px-4 py-16">
+        <h1 className="text-5xl font-extrabold tracking-tight text-white sm:text-[5rem]">
+          Create <span className="text-[hsl(280,100%,70%)]">T3</span> App
+        </h1>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:gap-8">
+          <Link
+            className="flex max-w-xs flex-col gap-4 rounded-xl bg-white/10 p-4 text-white hover:bg-white/20"
+            href="https://create.t3.gg/en/usage/first-steps"
+            target="_blank"
+          >
+            <h3 className="text-2xl font-bold">First Steps →</h3>
+            <div className="text-lg">
+              Just the basics - Everything you need to know to set up your
+              database and authentication.
             </div>
-            <div className="grid grid-cols-2 gap-1 lg:col-span-2">
-              {[1, 2, 3, 4].map((item) => (
-                <div key={item} className="group relative overflow-hidden">
-                  <Image
-                    src={`/starry-parallax.jpg?height=400&width=400`}
-                    alt={`Featured Product ${item}`}
-                    width={400}
-                    height={400}
-                    className="h-full w-full object-cover transition-transform group-hover:scale-105"
-                  />
-                  <div className="absolute inset-0 bg-black bg-opacity-50 opacity-0 transition-opacity group-hover:opacity-100" />
-                  <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100">
-                    <Button variant="secondary" size="sm">
-                      View Product
-                    </Button>
-                  </div>
-                </div>
-              ))}
+          </Link>
+          <Link
+            className="flex max-w-xs flex-col gap-4 rounded-xl bg-white/10 p-4 text-white hover:bg-white/20"
+            href="https://create.t3.gg/en/introduction"
+            target="_blank"
+          >
+            <h3 className="text-2xl font-bold">Documentation →</h3>
+            <div className="text-lg">
+              Learn more about Create T3 App, the libraries it uses, and how to
+              deploy it.
             </div>
-          </div>
+          </Link>
         </div>
-      </section>
-      <section className="w-full py-12 md:py-24 lg:py-32">
-        <div className="container px-4 md:px-6">
-          <div className="flex flex-col items-center space-y-4 text-center">
-            <div className="space-y-2">
-              <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl">
-                Stay Updated
-              </h2>
-              <p className="mx-auto max-w-[600px] text-gray-500 md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
-                Subscribe to our newsletter for exclusive deals and new product
-                announcements.
-              </p>
-            </div>
-            <div className="w-full max-w-sm space-y-2">
-              <form className="flex space-x-2">
-                <Input
-                  className="max-w-lg flex-1"
-                  placeholder="Enter your email"
-                  type="email"
-                />
-                <Button type="submit">Subscribe</Button>
-              </form>
-            </div>
-          </div>
-        </div>
-      </section>
-    </HydrateClient>
+      </div>
+    </main>
   );
 }
