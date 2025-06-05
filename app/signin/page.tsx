@@ -1,14 +1,14 @@
 "use client";
 
 import { useAuthActions } from "@convex-dev/auth/react";
-import { useRouter } from "next/navigation";
-import { useState } from "react";
+// import { useRouter } from "next/navigation";
+// import { useState } from "react";
 
 export default function SignIn() {
   const { signIn } = useAuthActions();
-  const [flow, setFlow] = useState<"signIn" | "signUp">("signIn");
-  const [error, setError] = useState<string | null>(null);
-  const router = useRouter();
+  // const [flow, setFlow] = useState<"signIn" | "signUp">("signIn");
+  // const [error, setError] = useState<string | null>(null);
+  // const router = useRouter();
   return (
     <div className="flex flex-col gap-8 w-96 mx-auto h-screen justify-center items-center">
       <button onClick={() => void signIn("google")}>Sign in with Google</button>
