@@ -11,7 +11,8 @@ export default function SignIn() {
   const router = useRouter();
   return (
     <div className="flex flex-col gap-8 w-96 mx-auto h-screen justify-center items-center">
-      <p>Log in to see the numbers</p>
+      <button onClick={() => void signIn("google")}>Sign in with Google</button>
+      {/* <p>Log in to see the numbers</p>
       <form
         className="flex flex-col gap-2"
         onSubmit={(e) => {
@@ -65,7 +66,7 @@ export default function SignIn() {
             </p>
           </div>
         )}
-      </form>
+      </form> */}
     </div>
   );
 }
