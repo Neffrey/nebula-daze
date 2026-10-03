@@ -11,6 +11,7 @@
     "lint": "eslint . --ignore-pattern \"convex/_generated/**\""
   },
   "dependencies": {
+    "@auth/core": "0.41.3",
     "@convex-dev/auth": "^0.0.95",
     "@t3-oss/env-nextjs": "^0.13.11",
     "convex": "^1.44.0",
