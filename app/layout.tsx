@@ -16,7 +16,7 @@ const display = Cormorant_Garamond({
 });
 
 export const metadata: Metadata = {
-  title: "Marel",
+  title: "Narel",
   description: "Tailoring, silk, and outerwear from the evening collection.",
 };
 

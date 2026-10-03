@@ -59,7 +59,7 @@ export default function Home() {
               Cloth, not costume.
             </h2>
             <p className="mt-6 max-w-md text-sm leading-7 text-[#f4f1eb]/80">
-              Marel is cut in small runs. Shoulders sit clean, hems fall long,
+              Narel is cut in small runs. Shoulders sit clean, hems fall long,
               and color stays close to stone, ink, and ivory. The clothes are
               made to be worn past midnight and again the next morning.
             </p>
@@ -69,7 +69,7 @@ export default function Home() {
       <footer className="border-t border-[#141210]/10 px-4 py-14 sm:px-6">
         <div className="mx-auto grid max-w-7xl gap-10 sm:grid-cols-3">
           <div>
-            <p className="font-display text-3xl tracking-[0.28em]">MAREL</p>
+            <p className="font-display text-3xl tracking-[0.28em]">NAREL</p>
             <p className="mt-3 max-w-xs text-sm leading-6 text-[#6f675e]">
               18 Mercer Street
               <br />
@@ -84,7 +84,7 @@ export default function Home() {
           </div>
           <div className="text-sm leading-8">
             <p className="text-[11px] tracking-[0.18em] uppercase">Client care</p>
-            <p>hello@marel.studio</p>
+            <p>hello@example.com</p>
             <p>Monday–Friday, 10–6 ET</p>
           </div>
         </div>

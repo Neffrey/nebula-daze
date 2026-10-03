@@ -37,10 +37,10 @@ export default function SiteHeader() {
             href="/"
             className="font-display absolute left-1/2 -translate-x-1/2 text-xl tracking-[0.28em] sm:text-2xl sm:tracking-[0.42em]"
           >
-            MAREL
+            NAREL
           </Link>
           <div className="flex items-center gap-5 text-[11px] tracking-[0.16em] uppercase">
-            <Link href="/signin">Account</Link>
+            <Link href="/account">Account</Link>
             <button type="button" onClick={() => setBagOpen(true)}>
               Bag (0)
             </button>
@@ -51,7 +51,7 @@ export default function SiteHeader() {
       {menuOpen && (
         <div className="fixed inset-0 z-40 bg-[#f4f1eb]">
           <div className="flex h-16 items-center justify-between px-4">
-            <span className="font-display text-2xl tracking-[0.42em]">MAREL</span>
+            <span className="font-display text-2xl tracking-[0.42em]">NAREL</span>
             <button
               type="button"
               className="text-[11px] tracking-[0.18em] uppercase"

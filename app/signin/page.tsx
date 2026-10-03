@@ -4,7 +4,7 @@ import { useAuthActions } from "@convex-dev/auth/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { siteUrlForHostname } from "@/lib/siteUrl";
+import { safeNextPath, siteUrlForHostname } from "@/lib/siteUrl";
 
 export default function SignIn() {
   const { signIn } = useAuthActions();
@@ -17,7 +17,7 @@ export default function SignIn() {
   return (
     <div className="mx-auto flex min-h-screen w-full max-w-md flex-col justify-center px-6 py-16">
       <Link href="/" className="font-display text-center text-3xl tracking-[0.42em]">
-        MAREL
+        NAREL
       </Link>
       <h1 className="mt-8 text-center text-[11px] tracking-[0.22em] uppercase">
         {flow === "signIn" ? "Sign in" : "Create an account"}
@@ -30,7 +30,7 @@ export default function SignIn() {
           setGoogleLoading(true);
           setError(null);
           void signIn("google", {
-            redirectTo: `${siteUrlForHostname(window.location.hostname)}/`,
+            redirectTo: `${siteUrlForHostname(window.location.hostname)}${pathAfterSignIn()}`,
           }).catch((signInError: unknown) => {
             setError(
               signInError instanceof Error
@@ -59,7 +59,7 @@ export default function SignIn() {
           formData.set("flow", flow);
           void signIn("password", formData)
             .then(() => {
-              router.push("/");
+              router.push(pathAfterSignIn());
             })
             .catch((signInError: unknown) => {
               setError(
@@ -110,6 +110,10 @@ export default function SignIn() {
       {error && <p className="mt-4 text-sm text-rose-800">{error}</p>}
     </div>
   );
+}
+
+function pathAfterSignIn() {
+  return safeNextPath(new URLSearchParams(window.location.search).get("next"));
 }
 
 function GoogleMark() {

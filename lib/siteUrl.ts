@@ -7,6 +7,19 @@ export function siteUrlForHostname(hostname: string): string {
   return hostname === "localhost" ? LOCAL_SITE_URL : PRODUCTION_SITE_URL;
 }
 
+export function safeNextPath(next: string | null): string {
+  if (
+    next !== null &&
+    next.startsWith("/") &&
+    !next.startsWith("//") &&
+    !next.includes("\\") &&
+    !next.includes("://")
+  ) {
+    return next;
+  }
+  return "/";
+}
+
 export function redirectDestination(redirectTo: string): string {
   if (redirectTo.startsWith("/") && !redirectTo.startsWith("//")) {
     return `${PRODUCTION_SITE_URL}${redirectTo}`;

@@ -3,12 +3,17 @@ import {
   createRouteMatcher,
   nextjsMiddlewareRedirect,
 } from "@convex-dev/auth/nextjs/server";
+import { safeNextPath } from "@/lib/siteUrl";
 
 const isSignInPage = createRouteMatcher(["/signin"]);
 
 export default convexAuthNextjsMiddleware(async (request, { convexAuth }) => {
   if (isSignInPage(request) && (await convexAuth.isAuthenticated())) {
-    return nextjsMiddlewareRedirect(request, "/");
+    const next = request.nextUrl.searchParams.get("next");
+    return nextjsMiddlewareRedirect(
+      request,
+      next === null ? "/account" : safeNextPath(next),
+    );
   }
 });
 
