@@ -2,11 +2,17 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { categories } from "@/lib/catalog";
+import { useCart } from "@/components/CartProvider";
+import { categories, formatPrice } from "@/lib/catalog";
 
 export default function SiteHeader() {
+  const { lines, count, remove } = useCart();
   const [menuOpen, setMenuOpen] = useState(false);
   const [bagOpen, setBagOpen] = useState(false);
+  const subtotal = lines.reduce(
+    (sum, line) => sum + line.price * line.quantity,
+    0,
+  );
 
   return (
     <>
@@ -42,7 +48,7 @@ export default function SiteHeader() {
           <div className="flex items-center gap-5 text-[11px] tracking-[0.16em] uppercase">
             <Link href="/account">Account</Link>
             <button type="button" onClick={() => setBagOpen(true)}>
-              Bag (0)
+              Bag ({count})
             </button>
           </div>
         </div>
@@ -94,14 +100,54 @@ export default function SiteHeader() {
                 Close
               </button>
             </div>
-            <p className="font-display mt-16 text-3xl">Your bag is empty.</p>
-            <a
-              href="#new"
-              className="mt-8 text-[11px] tracking-[0.18em] uppercase underline underline-offset-4"
-              onClick={() => setBagOpen(false)}
-            >
-              Continue shopping
-            </a>
+            {lines.length === 0 ? (
+              <p className="font-display mt-16 text-3xl">Your bag is empty.</p>
+            ) : (
+              <ul className="mt-10 flex flex-1 flex-col gap-6 overflow-y-auto">
+                {lines.map((line) => (
+                  <li key={line.name} className="flex items-start justify-between gap-4">
+                    <div>
+                      <p className="font-display text-2xl leading-tight">{line.name}</p>
+                      <p className="mt-1 text-sm text-[#6f675e]">Qty {line.quantity}</p>
+                      <button
+                        type="button"
+                        className="mt-2 text-[11px] tracking-[0.16em] uppercase underline underline-offset-4"
+                        onClick={() => remove(line.name)}
+                      >
+                        Remove
+                      </button>
+                    </div>
+                    <p className="shrink-0 text-sm">
+                      {formatPrice(line.price * line.quantity)}
+                    </p>
+                  </li>
+                ))}
+              </ul>
+            )}
+            <div className="mt-8 border-t border-[#141210]/10 pt-4">
+              {lines.length > 0 && (
+                <>
+                  <p className="flex justify-between text-sm">
+                    <span>Subtotal</span>
+                    <span>{formatPrice(subtotal)}</span>
+                  </p>
+                  <Link
+                    href="/checkout"
+                    className="mt-6 block bg-[#141210] py-3 text-center text-[11px] tracking-[0.22em] text-[#f4f1eb] uppercase"
+                    onClick={() => setBagOpen(false)}
+                  >
+                    Checkout
+                  </Link>
+                </>
+              )}
+              <a
+                href="#new"
+                className="mt-6 inline-block text-[11px] tracking-[0.18em] uppercase underline underline-offset-4"
+                onClick={() => setBagOpen(false)}
+              >
+                Continue shopping
+              </a>
+            </div>
           </aside>
         </div>
       )}

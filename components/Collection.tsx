@@ -2,9 +2,11 @@
 
 import Image from "next/image";
 import { useState } from "react";
+import { useCart } from "@/components/CartProvider";
 import { categories, formatPrice, products } from "@/lib/catalog";
 
 export default function Collection() {
+  const { add } = useCart();
   const [active, setActive] = useState<(typeof categories)[number]>("New");
   const visible =
     active === "New"
@@ -51,15 +53,26 @@ export default function Collection() {
                   className="object-cover"
                 />
               </div>
-              <div className="mt-3 flex items-baseline justify-between gap-3">
-                <h3 className="font-display text-xl leading-tight">
-                  {product.name}
-                </h3>
-                <p className="shrink-0 text-sm">{formatPrice(product.price)}</p>
+              <div className="mt-3 flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <h3 className="font-display text-xl leading-tight">
+                    {product.name}
+                  </h3>
+                  <p className="mt-1 text-[11px] tracking-[0.16em] text-[#6f675e] uppercase">
+                    {product.category}
+                  </p>
+                </div>
+                <div className="flex shrink-0 flex-col items-end gap-2">
+                  <p className="text-sm">{formatPrice(product.price)}</p>
+                  <button
+                    type="button"
+                    className="border border-[#141210]/20 px-3 py-2 text-[11px] tracking-[0.14em] uppercase"
+                    onClick={() => add(product)}
+                  >
+                    Add to cart
+                  </button>
+                </div>
               </div>
-              <p className="mt-1 text-[11px] tracking-[0.16em] text-[#6f675e] uppercase">
-                {product.category}
-              </p>
             </article>
           </li>
         ))}
