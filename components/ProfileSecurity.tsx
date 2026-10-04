@@ -3,10 +3,11 @@
 import { useAuthActions } from "@convex-dev/auth/react";
 import { useMutation, useQuery } from "convex/react";
 import { useRouter } from "next/navigation";
-import { FormEvent, useEffect, useState, type ReactNode } from "react";
+import { ChangeEvent, FormEvent, useEffect, useRef, useState, type ReactNode } from "react";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { siteUrlForHostname } from "@/lib/siteUrl";
+import { uploadFiles } from "@/lib/uploadthing";
 
 export default function ProfileSecurity({ onSignOut }: { onSignOut: () => void }) {
   const profile = useQuery(api.users.profile);
@@ -21,13 +22,35 @@ export default function ProfileSecurity({ onSignOut }: { onSignOut: () => void }
   const passwordLinked = profile.linkedAccounts.some((account) => account.provider === "password");
   const googleLinked = profile.linkedAccounts.some((account) => account.provider === "google");
 
+  const givenName = profile.displayName && profile.name ? profile.name : null;
+
   return (
-    <div className="mt-8 max-w-lg">
-      <DisplayNameSetting value={profile.displayName ?? ""} />
-      <NameSetting value={profile.name ?? ""} />
-      <ImageSetting image={profile.image} />
-      <EmailSetting value={profile.email ?? ""} />
-      <PhoneSetting value={profile.phone ?? ""} />
+    <div className="max-w-2xl">
+      <div className="flex flex-col gap-8 sm:flex-row sm:items-end">
+        <ImageSetting
+          image={profile.image}
+          initials={profileInitials(profile.displayName, profile.name, profile.email)}
+        />
+        <div className="min-w-0 flex-1 pb-1">
+          <DisplayNameSetting value={profile.displayName ?? ""} />
+          {givenName ? <p className="mt-3 text-sm text-[#6f675e]">{givenName}</p> : null}
+          <dl className="mt-5 flex flex-col gap-1 text-sm">
+            {profile.email ? (
+              <div>
+                <dt className="sr-only">Email</dt>
+                <dd>{profile.email}</dd>
+              </div>
+            ) : null}
+            {profile.phone ? (
+              <div>
+                <dt className="sr-only">Phone</dt>
+                <dd>{profile.phone}</dd>
+              </div>
+            ) : null}
+          </dl>
+        </div>
+      </div>
+
       <Addresses addresses={profile.addresses} />
       <LinkedAccounts passwordLinked={passwordLinked} googleLinked={googleLinked} />
       <GoogleLinkNotice googleLinked={googleLinked} />
@@ -44,121 +67,112 @@ export default function ProfileSecurity({ onSignOut }: { onSignOut: () => void }
 
 function DisplayNameSetting({ value }: { value: string }) {
   const save = useMutation(api.users.updateDisplayName);
-  return (
-    <TextSetting
-      title="Display name"
-      value={value}
-      autoComplete="nickname"
-      save={(next) => save({ displayName: next })}
-    />
-  );
-}
-
-function NameSetting({ value }: { value: string }) {
-  const save = useMutation(api.users.updateName);
-  return (
-    <TextSetting
-      title="Name"
-      value={value}
-      autoComplete="name"
-      save={(next) => save({ name: next })}
-    />
-  );
-}
-
-function EmailSetting({ value }: { value: string }) {
-  const save = useMutation(api.users.updateEmail);
-  return (
-    <TextSetting
-      title="Email"
-      value={value}
-      type="email"
-      autoComplete="email"
-      save={(next) => save({ email: next })}
-    />
-  );
-}
-
-function PhoneSetting({ value }: { value: string }) {
-  const save = useMutation(api.users.updatePhone);
-  return (
-    <TextSetting
-      title="Phone"
-      value={value}
-      type="tel"
-      autoComplete="tel"
-      save={(next) => save({ phone: next })}
-    />
-  );
-}
-
-function TextSetting({
-  title,
-  value,
-  type = "text",
-  autoComplete,
-  save,
-}: {
-  title: string;
-  value: string;
-  type?: "text" | "email" | "tel";
-  autoComplete: string;
-  save: (value: string) => Promise<null>;
-}) {
+  const inputRef = useRef<HTMLInputElement>(null);
   const [draft, setDraft] = useState(value);
+  const [editing, setEditing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const dirty = draft !== value;
 
   useEffect(() => {
     setDraft(value);
   }, [value]);
 
+  useEffect(() => {
+    if (editing) {
+      inputRef.current?.focus();
+    }
+  }, [editing]);
+
+  function cancel() {
+    setDraft(value);
+    setError(null);
+    setEditing(false);
+  }
+
   return (
-    <Setting title={title}>
-      <form
-        onSubmit={(event) => {
-          event.preventDefault();
-          setSaving(true);
-          setError(null);
-          void save(draft)
-            .catch((saveError: unknown) => {
-              setError(errorMessage(saveError));
-            })
-            .finally(() => {
-              setSaving(false);
-            });
-        }}
-      >
-        <input
-          className={inputClass}
-          type={type}
-          autoComplete={autoComplete}
-          value={draft}
-          onChange={(event) => {
-            setDraft(event.target.value);
-          }}
-        />
-        <SaveButton saving={saving} />
-        {error ? <ErrorText>{error}</ErrorText> : null}
-      </form>
-    </Setting>
+    <form
+      className="min-w-0"
+      onSubmit={(event) => {
+        event.preventDefault();
+        if (!editing || !dirty || saving) {
+          return;
+        }
+        setSaving(true);
+        setError(null);
+        void save({ displayName: draft })
+          .then(() => {
+            setEditing(false);
+          })
+          .catch((saveError: unknown) => {
+            setError(errorMessage(saveError));
+          })
+          .finally(() => {
+            setSaving(false);
+          });
+      }}
+    >
+      <p className="text-[11px] tracking-[0.22em] text-[#6f675e] uppercase">Display name</p>
+      {editing ? (
+        <h1 className="mt-3">
+          <input
+            ref={inputRef}
+            id="profile-display-name"
+            size={1}
+            className="font-display w-full min-w-0 max-w-full border-b border-[#141210]/30 bg-transparent text-5xl leading-none outline-none placeholder:text-[#141210]/25 sm:text-6xl"
+            autoComplete="nickname"
+            maxLength={40}
+            placeholder="Your profile"
+            aria-label="Display name"
+            value={draft}
+            onChange={(event) => {
+              setDraft(event.target.value);
+            }}
+          />
+        </h1>
+      ) : (
+        <div className="mt-3 flex min-w-0 items-end gap-4">
+          <h1
+            className={`font-display min-w-0 text-5xl leading-none sm:text-6xl ${value ? "" : "text-[#141210]/25"}`}
+          >
+            {value || "Your profile"}
+          </h1>
+          <button
+            type="button"
+            className="mb-1 shrink-0 text-[11px] tracking-[0.16em] uppercase underline underline-offset-4"
+            onClick={() => {
+              setEditing(true);
+            }}
+          >
+            Edit
+          </button>
+        </div>
+      )}
+      {editing ? (
+        <div className="mt-4 flex items-center gap-4">
+          {dirty ? <SaveButton saving={saving} className="" /> : null}
+          <button
+            type="button"
+            className="text-[11px] tracking-[0.16em] uppercase underline underline-offset-4"
+            onClick={cancel}
+            disabled={saving}
+          >
+            Cancel
+          </button>
+        </div>
+      ) : null}
+      {error ? <ErrorText>{error}</ErrorText> : null}
+    </form>
   );
 }
 
-function ImageSetting({ image }: { image: string | null }) {
-  const generateUploadUrl = useMutation(api.users.generateImageUploadUrl);
-  const saveImage = useMutation(api.users.saveImage);
+function ImageSetting({ image, initials }: { image: string | null; initials: string }) {
+  const saveProfilePhoto = useMutation(api.users.saveProfilePhoto);
   const removeImage = useMutation(api.users.removeImage);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
-  function upload(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const file = new FormData(event.currentTarget).get("image");
-    if (!(file instanceof File) || file.size === 0) {
-      setError("Choose an image");
-      return;
-    }
+  function uploadFile(file: File) {
     if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
       setError("Use a PNG, JPG, or WebP image");
       return;
@@ -169,21 +183,13 @@ function ImageSetting({ image }: { image: string | null }) {
     }
     setSaving(true);
     setError(null);
-    void generateUploadUrl()
-      .then(async (uploadUrl) => {
-        const response = await fetch(uploadUrl, {
-          method: "POST",
-          headers: { "Content-Type": file.type },
-          body: file,
-        });
-        if (!response.ok) {
+    void uploadFiles("imageUploader", { files: [file] })
+      .then(async (uploaded) => {
+        const photo = uploaded[0];
+        if (photo === undefined) {
           throw new Error("Unable to upload the image");
         }
-        const body: unknown = await response.json();
-        if (!isStorageUpload(body)) {
-          throw new Error("Unable to upload the image");
-        }
-        await saveImage({ storageId: body.storageId });
+        await saveProfilePhoto({ url: photo.ufsUrl });
       })
       .catch((uploadError: unknown) => {
         setError(errorMessage(uploadError));
@@ -193,29 +199,39 @@ function ImageSetting({ image }: { image: string | null }) {
       });
   }
 
+  function chooseFile(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (file) {
+      uploadFile(file);
+    }
+  }
+
   return (
-    <Setting title="User image">
+    <div className="w-36 shrink-0">
       {image ? (
         // Profile photos can come from Google or from Convex storage.
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={image} alt="" className="mb-4 size-16 object-cover" />
+        <img src={image} alt="" className="size-36 object-cover" />
       ) : (
-        <p className="mb-4 text-sm text-[#6f675e]">No image</p>
+        <div className="flex size-36 items-center justify-center bg-[#141210]/5 font-display text-4xl">
+          {initials}
+        </div>
       )}
-      <form onSubmit={upload}>
+      <label className="mt-3 block w-fit cursor-pointer text-[11px] tracking-[0.16em] uppercase underline underline-offset-4">
+        {saving ? "Please wait" : "Change photo"}
         <input
-          className="text-sm"
+          className="sr-only"
           type="file"
-          name="image"
           accept="image/jpeg,image/png,image/webp"
+          disabled={saving}
+          onChange={chooseFile}
         />
-        <SaveButton saving={saving} label="Upload" />
-        {error ? <ErrorText>{error}</ErrorText> : null}
-      </form>
+      </label>
       {image ? (
         <button
           type="button"
-          className="mt-3 text-[11px] tracking-[0.16em] uppercase underline underline-offset-4"
+          className="mt-2 block text-[11px] tracking-[0.16em] text-[#6f675e] uppercase underline underline-offset-4"
           onClick={() => {
             setError(null);
             void removeImage().catch((removeError: unknown) => {
@@ -223,58 +239,149 @@ function ImageSetting({ image }: { image: string | null }) {
             });
           }}
         >
-          Remove image
+          Remove
         </button>
       ) : null}
-    </Setting>
+      {error ? <ErrorText>{error}</ErrorText> : null}
+    </div>
   );
 }
 
 function Addresses({
   addresses,
 }: {
-  addresses: Array<{
-    _id: Id<"addresses">;
-    label: string;
-    addressLine: string;
-    city: string;
-    postalCode: string;
-  }>;
+  addresses: Array<SavedAddress>;
 }) {
-  const [addKey, setAddKey] = useState(0);
+  const [popup, setPopup] = useState<"add" | "edit" | null>(null);
+  const defaultAddress = addresses.find((address) => address.isDefault) ?? null;
 
   return (
-    <Setting title="Saved addresses">
-      {addresses.length === 0 ? (
-        <p className="mb-4 text-sm text-[#6f675e]">No saved addresses.</p>
-      ) : (
-        <div className="mb-8 flex flex-col gap-8">
-          {addresses.map((address) => (
-            <AddressForm key={address._id} address={address} />
-          ))}
+    <Setting title="Default Address">
+      {defaultAddress ? (
+        <div>
+          <p className="text-[11px] tracking-[0.16em] uppercase">{defaultAddress.label}</p>
+          <p className="mt-2 text-sm">{defaultAddress.addressLine}</p>
+          <p className="text-sm">
+            {defaultAddress.city} {defaultAddress.postalCode}
+          </p>
         </div>
+      ) : (
+        <p className="text-sm text-[#6f675e]">No default address.</p>
       )}
-      <p className="text-[11px] tracking-[0.16em] text-[#6f675e] uppercase">Add an address</p>
-      <AddressForm key={addKey} onSaved={() => setAddKey((key) => key + 1)} />
+      <div className="mt-4 flex flex-wrap gap-3">
+        <button type="button" className={outlineButtonClass} onClick={() => setPopup("add")}>
+          Add address
+        </button>
+        <button type="button" className={outlineButtonClass} onClick={() => setPopup("edit")}>
+          Edit addresses
+        </button>
+      </div>
+      {popup === "add" ? (
+        <Popup title="Add address" onClose={() => setPopup(null)}>
+          <AddressForm onSaved={() => setPopup(null)} />
+        </Popup>
+      ) : null}
+      {popup === "edit" ? (
+        <Popup title="Edit addresses" onClose={() => setPopup(null)}>
+          <EditAddresses addresses={addresses} />
+        </Popup>
+      ) : null}
     </Setting>
+  );
+}
+
+function EditAddresses({ addresses }: { addresses: Array<SavedAddress> }) {
+  const [editingId, setEditingId] = useState<Id<"addresses"> | null>(null);
+
+  if (addresses.length === 0) {
+    return <p className="mt-6 text-sm text-[#6f675e]">No saved addresses.</p>;
+  }
+
+  return (
+    <div className="mt-6 flex flex-col gap-8">
+      {addresses.map((address) =>
+        editingId === address._id ? (
+          <AddressForm
+            key={address._id}
+            address={address}
+            onSaved={() => setEditingId(null)}
+            onCancel={() => setEditingId(null)}
+          />
+        ) : (
+          <SavedAddressView key={address._id} address={address} onEdit={() => setEditingId(address._id)} />
+        ),
+      )}
+    </div>
+  );
+}
+
+function SavedAddressView({ address, onEdit }: { address: SavedAddress; onEdit: () => void }) {
+  const deleteAddress = useMutation(api.users.deleteAddress);
+  const setDefaultAddress = useMutation(api.users.setDefaultAddress);
+  const [error, setError] = useState<string | null>(null);
+  const [settingDefault, setSettingDefault] = useState(false);
+
+  return (
+    <div>
+      <p className="text-[11px] tracking-[0.16em] uppercase">{address.label}</p>
+      <p className="mt-2 text-sm">{address.addressLine}</p>
+      <p className="text-sm">
+        {address.city} {address.postalCode}
+      </p>
+      <div className="mt-3 flex flex-wrap items-center gap-4">
+        {address.isDefault ? (
+          <span className="text-[11px] tracking-[0.16em] uppercase">Default</span>
+        ) : (
+          <button
+            type="button"
+            className={`${textButtonClass} disabled:opacity-50`}
+            disabled={settingDefault}
+            onClick={() => {
+              setError(null);
+              setSettingDefault(true);
+              void setDefaultAddress({ addressId: address._id })
+                .catch((defaultError: unknown) => {
+                  setError(errorMessage(defaultError));
+                })
+                .finally(() => {
+                  setSettingDefault(false);
+                });
+            }}
+          >
+            {settingDefault ? "Please wait" : "Set as default"}
+          </button>
+        )}
+        <button type="button" className={textButtonClass} onClick={onEdit}>
+          Edit
+        </button>
+        <button
+          type="button"
+          className={textButtonClass}
+          onClick={() => {
+            setError(null);
+            void deleteAddress({ addressId: address._id }).catch((deleteError: unknown) => {
+              setError(errorMessage(deleteError));
+            });
+          }}
+        >
+          Remove
+        </button>
+      </div>
+      {error ? <ErrorText>{error}</ErrorText> : null}
+    </div>
   );
 }
 
 function AddressForm({
   address,
   onSaved,
+  onCancel,
 }: {
-  address?: {
-    _id: Id<"addresses">;
-    label: string;
-    addressLine: string;
-    city: string;
-    postalCode: string;
-  };
+  address?: SavedAddress;
   onSaved?: () => void;
+  onCancel?: () => void;
 }) {
   const saveAddress = useMutation(api.users.saveAddress);
-  const deleteAddress = useMutation(api.users.deleteAddress);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
@@ -303,7 +410,13 @@ function AddressForm({
 
   return (
     <form className="mt-4 flex flex-col gap-3" onSubmit={save}>
-      <input className={inputClass} name="label" placeholder="Label" defaultValue={address?.label ?? ""} />
+      <input
+        className={inputClass}
+        name="label"
+        autoComplete="name"
+        placeholder="Name"
+        defaultValue={address?.label ?? ""}
+      />
       <input
         className={inputClass}
         name="addressLine"
@@ -327,23 +440,56 @@ function AddressForm({
       />
       <div className="flex items-center gap-4">
         <SaveButton saving={saving} />
-        {address ? (
-          <button
-            type="button"
-            className="text-[11px] tracking-[0.16em] uppercase underline underline-offset-4"
-            onClick={() => {
-              setError(null);
-              void deleteAddress({ addressId: address._id }).catch((deleteError: unknown) => {
-                setError(errorMessage(deleteError));
-              });
-            }}
-          >
-            Remove
+        {onCancel ? (
+          <button type="button" className={textButtonClass} onClick={onCancel} disabled={saving}>
+            Cancel
           </button>
         ) : null}
       </div>
       {error ? <ErrorText>{error}</ErrorText> : null}
     </form>
+  );
+}
+
+function Popup({ title, onClose, children }: { title: string; onClose: () => void; children: ReactNode }) {
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
+
+  useEffect(() => {
+    function onKey(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        onCloseRef.current();
+      }
+    }
+    document.addEventListener("keydown", onKey);
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.body.style.overflow = previousOverflow;
+    };
+  }, []);
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <button type="button" aria-label="Close" className="absolute inset-0 bg-[#141210]/40" onClick={onClose} />
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="address-dialog-title"
+        className="relative max-h-[min(40rem,calc(100vh-2rem))] w-full max-w-lg overflow-y-auto bg-[#f4f1eb] p-6 sm:p-8"
+      >
+        <div className="flex items-center justify-between gap-4">
+          <h2 id="address-dialog-title" className="text-[11px] tracking-[0.22em] uppercase">
+            {title}
+          </h2>
+          <button type="button" className="text-[11px] tracking-[0.18em] uppercase" onClick={onClose}>
+            Close
+          </button>
+        </div>
+        {children}
+      </div>
+    </div>
   );
 }
 
@@ -500,11 +646,19 @@ function Setting({ title, children }: { title: string; children: ReactNode }) {
   );
 }
 
-function SaveButton({ saving, label = "Save" }: { saving: boolean; label?: string }) {
+function SaveButton({
+  saving,
+  label = "Save",
+  className = "mt-3",
+}: {
+  saving: boolean;
+  label?: string;
+  className?: string;
+}) {
   return (
     <button
       type="submit"
-      className="mt-3 w-fit border border-[#141210]/20 px-6 py-3 text-[11px] tracking-[0.22em] uppercase disabled:opacity-50"
+      className={`${className} w-fit border border-[#141210]/20 px-6 py-3 text-[11px] tracking-[0.22em] uppercase disabled:opacity-50`}
       disabled={saving}
     >
       {saving ? "Please wait" : label}
@@ -516,18 +670,38 @@ function ErrorText({ children }: { children: string }) {
   return <p className="mt-3 text-sm text-rose-800">{children}</p>;
 }
 
+function profileInitials(
+  displayName: string | null,
+  name: string | null,
+  email: string | null,
+) {
+  const source = (displayName || name || email || "").trim();
+  const parts = source.split(/[\s@]+/).filter((part) => part.length > 0);
+  const first = parts[0]?.[0];
+  const second = parts[1]?.[0];
+  if (!first) {
+    return "N";
+  }
+  return `${first}${second ?? ""}`.toUpperCase();
+}
+
+type SavedAddress = {
+  _id: Id<"addresses">;
+  label: string;
+  addressLine: string;
+  city: string;
+  postalCode: string;
+  isDefault: boolean;
+};
+
 function errorMessage(error: unknown) {
   return error instanceof Error ? error.message : "Unable to save";
 }
 
-function isStorageUpload(body: unknown): body is { storageId: Id<"_storage"> } {
-  return (
-    typeof body === "object" &&
-    body !== null &&
-    "storageId" in body &&
-    typeof body.storageId === "string"
-  );
-}
-
 const inputClass =
   "w-full border border-[#141210]/20 bg-transparent px-3 py-3 text-sm outline-none";
+
+const outlineButtonClass =
+  "border border-[#141210]/20 px-6 py-3 text-[11px] tracking-[0.22em] uppercase";
+
+const textButtonClass = "text-[11px] tracking-[0.16em] uppercase underline underline-offset-4";

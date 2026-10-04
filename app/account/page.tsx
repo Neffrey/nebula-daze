@@ -96,8 +96,11 @@ function SignedIn({ onSignOut }: { onSignOut: () => void }) {
         </ul>
       </nav>
       <section>
-        <h1 className="font-display text-5xl leading-none">{section}</h1>
-        {section === "Profile & Security" ? <ProfileSecurity onSignOut={onSignOut} /> : null}
+        {section === "Profile & Security" ? (
+          <ProfileSecurity onSignOut={onSignOut} />
+        ) : (
+          <h1 className="font-display text-5xl leading-none">{section}</h1>
+        )}
         {section === "Orders" ? <Orders /> : null}
         {section === "Payments" ? <Payments /> : null}
         {section === "Preferences" ? <Preferences /> : null}

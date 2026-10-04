@@ -15,6 +15,7 @@ const users = defineTable({
   isAnonymous: v.optional(v.boolean()),
   displayName: v.optional(v.string()),
   imageId: v.optional(v.id("_storage")),
+  photoUrl: v.optional(v.string()),
 })
   .index("email", ["email"])
   .index("phone", ["phone"]);
@@ -28,6 +29,7 @@ export default defineSchema({
     addressLine: v.string(),
     city: v.string(),
     postalCode: v.string(),
+    isDefault: v.optional(v.boolean()),
   }).index("by_userId", ["userId"]),
   googleLinkIntents: defineTable({
     userId: v.id("users"),

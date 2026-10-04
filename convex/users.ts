@@ -18,6 +18,7 @@ const addressValidator = v.object({
   addressLine: v.string(),
   city: v.string(),
   postalCode: v.string(),
+  isDefault: v.boolean(),
 });
 
 const profileValidator = v.object({
@@ -30,8 +31,7 @@ const profileValidator = v.object({
   linkedAccounts: v.array(v.object({ provider: v.string() })),
 });
 
-const imageTypes = ["image/jpeg", "image/png", "image/webp"];
-const maxImageBytes = 5 * 1024 * 1024;
+const maxPhotoUrlLength = 500;
 
 export const viewer = query({
   args: {},
@@ -59,10 +59,12 @@ export const profile = query({
       return null;
     }
 
-    const addresses = await ctx.db
-      .query("addresses")
-      .withIndex("by_userId", (q) => q.eq("userId", user._id))
-      .take(8);
+    const addresses = (
+      await ctx.db
+        .query("addresses")
+        .withIndex("by_userId", (q) => q.eq("userId", user._id))
+        .take(8)
+    ).sort((left, right) => Number(right.isDefault === true) - Number(left.isDefault === true));
     const accounts = await ctx.db
       .query("authAccounts")
       .withIndex("userIdAndProvider", (q) => q.eq("userId", user._id))
@@ -80,6 +82,7 @@ export const profile = query({
         addressLine: address.addressLine,
         city: address.city,
         postalCode: address.postalCode,
+        isDefault: address.isDefault === true,
       })),
       linkedAccounts: accounts.map((account) => ({ provider: account.provider })),
     };
@@ -110,36 +113,19 @@ export const updateName = mutation({
   },
 });
 
-export const generateImageUploadUrl = mutation({
-  args: {},
-  returns: v.string(),
-  handler: async (ctx) => {
-    await requireUser(ctx);
-    return await ctx.storage.generateUploadUrl();
-  },
-});
-
-export const saveImage = mutation({
-  args: { storageId: v.id("_storage") },
+export const saveProfilePhoto = mutation({
+  args: { url: v.string() },
   returns: v.null(),
   handler: async (ctx, args) => {
     const user = await requireUser(ctx);
-    const metadata = await ctx.storage.getMetadata(args.storageId);
-    if (metadata === null) {
-      throw new Error("Upload the image again");
-    }
-    if (!imageTypes.includes(metadata.contentType ?? "")) {
-      await ctx.storage.delete(args.storageId);
-      throw new Error("Use a PNG, JPG, or WebP image");
-    }
-    if (metadata.size > maxImageBytes) {
-      await ctx.storage.delete(args.storageId);
-      throw new Error("Image must be under 5MB");
-    }
-    if (user.imageId !== undefined && user.imageId !== args.storageId) {
+    const photoUrl = uploadthingPhotoUrl(args.url);
+    if (user.imageId !== undefined) {
       await ctx.storage.delete(user.imageId);
     }
-    await ctx.db.patch("users", user._id, { imageId: args.storageId });
+    await ctx.db.patch("users", user._id, {
+      photoUrl,
+      imageId: undefined,
+    });
     return null;
   },
 });
@@ -155,6 +141,7 @@ export const removeImage = mutation({
     await ctx.db.patch("users", user._id, {
       imageId: undefined,
       image: undefined,
+      photoUrl: undefined,
     });
     return null;
   },
@@ -251,7 +238,36 @@ export const saveAddress = mutation({
     if (saved.length >= 8) {
       throw new Error("Save up to 8 addresses");
     }
-    await ctx.db.insert("addresses", { userId: user._id, ...address });
+    const hasDefault = saved.some((item) => item.isDefault === true);
+    await ctx.db.insert("addresses", {
+      userId: user._id,
+      ...address,
+      isDefault: !hasDefault,
+    });
+    return null;
+  },
+});
+
+export const setDefaultAddress = mutation({
+  args: { addressId: v.id("addresses") },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const user = await requireUser(ctx);
+    const existing = await ctx.db.get("addresses", args.addressId);
+    if (existing === null || existing.userId !== user._id) {
+      throw new Error("Address not found");
+    }
+    const saved = await ctx.db
+      .query("addresses")
+      .withIndex("by_userId", (q) => q.eq("userId", user._id))
+      .take(8);
+    for (const address of saved) {
+      const isDefault = address._id === existing._id;
+      if ((address.isDefault === true) === isDefault) {
+        continue;
+      }
+      await ctx.db.patch("addresses", address._id, { isDefault });
+    }
     return null;
   },
 });
@@ -266,6 +282,16 @@ export const deleteAddress = mutation({
       throw new Error("Address not found");
     }
     await ctx.db.delete("addresses", args.addressId);
+    if (existing.isDefault === true) {
+      const remaining = await ctx.db
+        .query("addresses")
+        .withIndex("by_userId", (q) => q.eq("userId", user._id))
+        .take(8);
+      const next = remaining[0];
+      if (next !== undefined) {
+        await ctx.db.patch("addresses", next._id, { isDefault: true });
+      }
+    }
     return null;
   },
 });
@@ -377,10 +403,33 @@ async function requireUser(ctx: QueryCtx | MutationCtx) {
 }
 
 async function profileImage(ctx: QueryCtx, user: Doc<"users">) {
+  if (user.photoUrl !== undefined) {
+    return user.photoUrl;
+  }
   if (user.imageId !== undefined) {
     return (await ctx.storage.getUrl(user.imageId)) ?? user.image ?? null;
   }
   return user.image ?? null;
+}
+
+function uploadthingPhotoUrl(value: string) {
+  if (value.length === 0 || value.length > maxPhotoUrlLength) {
+    throw new Error("Upload the image again");
+  }
+  let url: URL;
+  try {
+    url = new URL(value);
+  } catch {
+    throw new Error("Upload the image again");
+  }
+  const host = url.hostname;
+  if (
+    url.protocol !== "https:" ||
+    (host !== "utfs.io" && !host.endsWith(".ufs.sh"))
+  ) {
+    throw new Error("Upload the image again");
+  }
+  return url.toString();
 }
 
 async function passwordAccountFor(ctx: MutationCtx, userId: Id<"users">) {
