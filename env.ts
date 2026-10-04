@@ -5,6 +5,7 @@ export const env = createEnv({
   server: {
     // Not required in development. See .env.example.
     CONVEX_DEPLOY_KEY: z.string().min(1).optional(),
+    UPLOADTHING_TOKEN: z.string().min(1),
   },
   client: {
     NEXT_PUBLIC_CONVEX_URL: z.url(),
