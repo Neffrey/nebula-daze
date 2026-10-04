@@ -1,3 +1,5 @@
 allowBuilds:
   esbuild: set this to true or false
   unrs-resolver: set this to true or false
+patchedDependencies:
+  '@convex-dev/auth@0.0.95': patches/@convex-dev__auth@0.0.95.patch

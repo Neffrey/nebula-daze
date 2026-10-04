@@ -22,35 +22,8 @@ export default function SignIn() {
       <h1 className="mt-8 text-center text-[11px] tracking-[0.22em] uppercase">
         {flow === "signIn" ? "Sign in" : "Create an account"}
       </h1>
-      <button
-        className="mt-8 flex items-center justify-center gap-3 border border-[#141210]/20 py-3 text-[11px] tracking-[0.22em] uppercase disabled:opacity-50"
-        type="button"
-        disabled={loading || googleLoading}
-        onClick={() => {
-          setGoogleLoading(true);
-          setError(null);
-          void signIn("google", {
-            redirectTo: `${siteUrlForHostname(window.location.hostname)}${pathAfterSignIn()}`,
-          }).catch((signInError: unknown) => {
-            setError(
-              signInError instanceof Error
-                ? signInError.message
-                : "Unable to continue with Google",
-            );
-            setGoogleLoading(false);
-          });
-        }}
-      >
-        <GoogleMark />
-        {googleLoading ? "Please wait" : "Continue with Google"}
-      </button>
-      <div className="mt-6 flex items-center gap-3 text-[#6f675e]">
-        <span className="h-px flex-1 bg-[#141210]/15" />
-        <span className="text-[11px] tracking-[0.16em] uppercase">or</span>
-        <span className="h-px flex-1 bg-[#141210]/15" />
-      </div>
       <form
-        className="mt-6 flex flex-col gap-4"
+        className="mt-8 flex flex-col gap-4"
         onSubmit={(event) => {
           event.preventDefault();
           setLoading(true);
@@ -97,16 +70,43 @@ export default function SignIn() {
         >
           {loading ? "Please wait" : flow === "signIn" ? "Sign in" : "Sign up"}
         </button>
-        <button
-          type="button"
-          className="text-sm text-[#6f675e] underline underline-offset-4"
-          onClick={() => setFlow(flow === "signIn" ? "signUp" : "signIn")}
-        >
-          {flow === "signIn"
-            ? "Need an account? Create one"
-            : "Already registered? Sign in"}
-        </button>
       </form>
+      <div className="mt-6 flex items-center gap-3 text-[#6f675e]">
+        <span className="h-px flex-1 bg-[#141210]/15" />
+        <span className="text-[11px] tracking-[0.16em] uppercase">or</span>
+        <span className="h-px flex-1 bg-[#141210]/15" />
+      </div>
+      <button
+        className="mt-6 flex items-center justify-center gap-3 border border-[#141210]/20 py-3 text-[11px] tracking-[0.22em] uppercase disabled:opacity-50"
+        type="button"
+        disabled={loading || googleLoading}
+        onClick={() => {
+          setGoogleLoading(true);
+          setError(null);
+          void signIn("google", {
+            redirectTo: `${siteUrlForHostname(window.location.hostname)}${pathAfterSignIn()}`,
+          }).catch((signInError: unknown) => {
+            setError(
+              signInError instanceof Error
+                ? signInError.message
+                : "Unable to continue with Google",
+            );
+            setGoogleLoading(false);
+          });
+        }}
+      >
+        <GoogleMark />
+        {googleLoading ? "Please wait" : "Continue with Google"}
+      </button>
+      <button
+        type="button"
+        className="mt-4 text-sm text-[#6f675e] underline underline-offset-4"
+        onClick={() => setFlow(flow === "signIn" ? "signUp" : "signIn")}
+      >
+        {flow === "signIn"
+          ? "Need an account? Create one"
+          : "Already registered? Sign in"}
+      </button>
       {error && <p className="mt-4 text-sm text-rose-800">{error}</p>}
     </div>
   );

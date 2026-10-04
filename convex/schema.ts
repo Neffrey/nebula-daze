@@ -5,8 +5,34 @@ import { v } from "convex/values";
 // The schema is normally optional, but Convex Auth
 // requires indexes defined on `authTables`.
 // The schema provides more precise TypeScript types.
+const users = defineTable({
+  name: v.optional(v.string()),
+  image: v.optional(v.string()),
+  email: v.optional(v.string()),
+  emailVerificationTime: v.optional(v.number()),
+  phone: v.optional(v.string()),
+  phoneVerificationTime: v.optional(v.number()),
+  isAnonymous: v.optional(v.boolean()),
+  displayName: v.optional(v.string()),
+  imageId: v.optional(v.id("_storage")),
+})
+  .index("email", ["email"])
+  .index("phone", ["phone"]);
+
 export default defineSchema({
   ...authTables,
+  users,
+  addresses: defineTable({
+    userId: v.id("users"),
+    label: v.string(),
+    addressLine: v.string(),
+    city: v.string(),
+    postalCode: v.string(),
+  }).index("by_userId", ["userId"]),
+  googleLinkIntents: defineTable({
+    userId: v.id("users"),
+    expiresAt: v.number(),
+  }).index("by_userId", ["userId"]),
   orders: defineTable({
     userId: v.id("users"),
     shipName: v.string(),

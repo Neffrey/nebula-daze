@@ -4,6 +4,9 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
+patchedDependencies:
+  '@convex-dev/auth@0.0.95': 9b5bac8b1d698c06c37d860b6ebbcbb06dc91d011e569e6cb3f125e8bba55c37
+
 importers:
 
   .:
@@ -13,7 +16,7 @@ importers:
         version: 0.41.3
       '@convex-dev/auth':
         specifier: ^0.0.95
-        version: 0.0.95(@auth/core@0.41.3)(convex@1.46.0(react@19.3.0))(react@19.3.0)
+        version: 0.0.95(patch_hash=9b5bac8b1d698c06c37d860b6ebbcbb06dc91d011e569e6cb3f125e8bba55c37)(@auth/core@0.41.3)(convex@1.46.0(react@19.3.0))(react@19.3.0)
       '@t3-oss/env-nextjs':
         specifier: ^0.13.11
         version: 0.13.11(typescript@6.0.3)(zod@4.6.5)
@@ -2631,7 +2634,7 @@ snapshots:
       '@babel/helper-string-parser': 7.29.7
       '@babel/helper-validator-identifier': 7.29.7
 
-  '@convex-dev/auth@0.0.95(@auth/core@0.41.3)(convex@1.46.0(react@19.3.0))(react@19.3.0)':
+  '@convex-dev/auth@0.0.95(patch_hash=9b5bac8b1d698c06c37d860b6ebbcbb06dc91d011e569e6cb3f125e8bba55c37)(@auth/core@0.41.3)(convex@1.46.0(react@19.3.0))(react@19.3.0)':
     dependencies:
       '@auth/core': 0.41.3
       '@oslojs/crypto': 1.0.1
