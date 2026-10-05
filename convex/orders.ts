@@ -2,6 +2,8 @@ import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { products } from "../lib/catalog";
+import { requireCountryCode } from "../lib/countries";
+import { optionalLine, shippingPhone } from "../lib/shippingAddress";
 
 const itemArgs = v.object({
   name: v.string(),
@@ -13,6 +15,8 @@ const listedOrder = v.object({
   placedAt: v.number(),
   total: v.number(),
   city: v.string(),
+  region: v.string(),
+  country: v.string(),
   items: v.array(
     v.object({
       name: v.string(),
@@ -48,6 +52,8 @@ export const listMine = query({
         placedAt: order.placedAt,
         total: order.total,
         city: order.city,
+        region: order.region ?? "",
+        country: order.country ?? "",
         items: items.map((item) => ({
           name: item.name,
           quantity: item.quantity,
@@ -64,8 +70,12 @@ export const place = mutation({
     items: v.array(itemArgs),
     shipName: v.string(),
     addressLine: v.string(),
+    addressLine2: v.string(),
     city: v.string(),
+    region: v.string(),
     postalCode: v.string(),
+    country: v.string(),
+    phone: v.string(),
   },
   returns: v.object({
     orderId: v.id("orders"),
@@ -77,10 +87,14 @@ export const place = mutation({
       throw new Error("Sign in to place an order");
     }
 
-    const shipName = requireText(args.shipName, "Name", 80);
+    const shipName = requireText(args.shipName, "Recipient name", 80);
     const addressLine = requireText(args.addressLine, "Address", 120);
+    const addressLine2 = optionalLine(args.addressLine2, "Apartment, suite, or unit", 80);
     const city = requireText(args.city, "City", 80);
+    const region = requireText(args.region, "State / Province", 80);
     const postalCode = requireText(args.postalCode, "Postal code", 20);
+    const country = requireCountryCode(args.country);
+    const phone = shippingPhone(args.phone);
 
     if (args.items.length === 0 || args.items.length > 20) {
       throw new Error("Your bag is empty");
@@ -117,8 +131,12 @@ export const place = mutation({
       userId,
       shipName,
       addressLine,
+      addressLine2,
       city,
+      region,
       postalCode,
+      country,
+      phone,
       total,
       placedAt: Date.now(),
     });

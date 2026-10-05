@@ -8,6 +8,7 @@ import SiteHeader from "@/components/SiteHeader";
 import { useCart } from "@/components/CartProvider";
 import { api } from "@/convex/_generated/api";
 import { formatPrice } from "@/lib/catalog";
+import { countryName } from "@/lib/countries";
 
 export default function CheckoutPage() {
   const { lines, clear } = useCart();
@@ -17,8 +18,12 @@ export default function CheckoutPage() {
   const [placing, setPlacing] = useState(false);
   const [placedTotal, setPlacedTotal] = useState<number | null>(null);
   const [addressLine, setAddressLine] = useState("");
+  const [addressLine2, setAddressLine2] = useState("");
   const [city, setCity] = useState("");
+  const [region, setRegion] = useState("");
   const [postalCode, setPostalCode] = useState("");
+  const [country, setCountry] = useState("");
+  const [phone, setPhone] = useState("");
 
   const subtotal = lines.reduce((sum, line) => sum + line.price * line.quantity, 0);
 
@@ -31,8 +36,12 @@ export default function CheckoutPage() {
       items: lines.map((line) => ({ name: line.name, quantity: line.quantity })),
       shipName: String(formData.get("shipName") ?? ""),
       addressLine,
+      addressLine2,
       city,
+      region,
       postalCode,
+      country,
+      phone,
     })
       .then((order) => {
         clear();
@@ -62,7 +71,7 @@ export default function CheckoutPage() {
             <form className="flex flex-col gap-4" onSubmit={place}>
               <h1 className="font-display text-5xl leading-none">Ship to</h1>
               <p className="text-sm text-[#6f675e]">{viewer.email ?? "Signed in"}</p>
-              <Field label="Name" name="shipName" autoComplete="name" defaultValue={viewer.name ?? ""} />
+              <Field label="Recipient name" name="shipName" autoComplete="name" defaultValue={viewer.name ?? ""} />
               <label className="text-[11px] tracking-[0.16em] uppercase">
                 Address
                 <AddressAutocomplete
@@ -74,12 +83,33 @@ export default function CheckoutPage() {
                     if (place.addressLine) {
                       setAddressLine(place.addressLine);
                     }
+                    if (place.addressLine2) {
+                      setAddressLine2(place.addressLine2);
+                    }
                     if (place.city) {
                       setCity(place.city);
+                    }
+                    if (place.region) {
+                      setRegion(place.region);
                     }
                     if (place.postalCode) {
                       setPostalCode(place.postalCode);
                     }
+                    if (place.country) {
+                      setCountry(countryName(place.country));
+                    }
+                  }}
+                />
+              </label>
+              <label className="text-[11px] tracking-[0.16em] uppercase">
+                Apartment, suite, or unit
+                <input
+                  className="mt-2 w-full border border-[#141210]/20 bg-transparent px-3 py-3 text-sm tracking-normal normal-case outline-none"
+                  name="addressLine2"
+                  autoComplete="address-line2"
+                  value={addressLine2}
+                  onChange={(event) => {
+                    setAddressLine2(event.target.value);
                   }}
                 />
               </label>
@@ -97,6 +127,19 @@ export default function CheckoutPage() {
                 />
               </label>
               <label className="text-[11px] tracking-[0.16em] uppercase">
+                State / Province
+                <input
+                  className="mt-2 w-full border border-[#141210]/20 bg-transparent px-3 py-3 text-sm tracking-normal normal-case outline-none"
+                  name="region"
+                  autoComplete="address-level1"
+                  required
+                  value={region}
+                  onChange={(event) => {
+                    setRegion(event.target.value);
+                  }}
+                />
+              </label>
+              <label className="text-[11px] tracking-[0.16em] uppercase">
                 Postal code
                 <input
                   className="mt-2 w-full border border-[#141210]/20 bg-transparent px-3 py-3 text-sm tracking-normal normal-case outline-none"
@@ -106,6 +149,31 @@ export default function CheckoutPage() {
                   value={postalCode}
                   onChange={(event) => {
                     setPostalCode(event.target.value);
+                  }}
+                />
+              </label>
+              <label className="text-[11px] tracking-[0.16em] uppercase">
+                Country
+                <input
+                  className="mt-2 w-full border border-[#141210]/20 bg-transparent px-3 py-3 text-sm tracking-normal normal-case outline-none"
+                  name="country"
+                  autoComplete="country-name"
+                  required
+                  value={country}
+                  onChange={(event) => {
+                    setCountry(event.target.value);
+                  }}
+                />
+              </label>
+              <label className="text-[11px] tracking-[0.16em] uppercase">
+                Phone
+                <input
+                  className="mt-2 w-full border border-[#141210]/20 bg-transparent px-3 py-3 text-sm tracking-normal normal-case outline-none"
+                  name="phone"
+                  autoComplete="tel"
+                  value={phone}
+                  onChange={(event) => {
+                    setPhone(event.target.value);
                   }}
                 />
               </label>

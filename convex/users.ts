@@ -5,6 +5,8 @@ import type { Doc, Id } from "./_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "./_generated/server";
 import { mutation, query } from "./_generated/server";
 import { prepareGoogleLink as prepareGoogleLinkForUser } from "./googleAccount";
+import { requireCountryCode } from "../lib/countries";
+import { optionalLine, shippingPhone } from "../lib/shippingAddress";
 
 const viewerValidator = v.object({
   name: v.union(v.string(), v.null()),
@@ -16,8 +18,12 @@ const addressValidator = v.object({
   _id: v.id("addresses"),
   label: v.string(),
   addressLine: v.string(),
+  addressLine2: v.string(),
   city: v.string(),
+  region: v.string(),
   postalCode: v.string(),
+  country: v.string(),
+  phone: v.string(),
   isDefault: v.boolean(),
 });
 
@@ -80,8 +86,12 @@ export const profile = query({
         _id: address._id,
         label: address.label,
         addressLine: address.addressLine,
+        addressLine2: address.addressLine2 ?? "",
         city: address.city,
+        region: address.region ?? "",
         postalCode: address.postalCode,
+        country: address.country ?? "",
+        phone: address.phone ?? "",
         isDefault: address.isDefault === true,
       })),
       linkedAccounts: accounts.map((account) => ({ provider: account.provider })),
@@ -211,17 +221,25 @@ export const saveAddress = mutation({
     addressId: v.optional(v.id("addresses")),
     label: v.string(),
     addressLine: v.string(),
+    addressLine2: v.string(),
     city: v.string(),
+    region: v.string(),
     postalCode: v.string(),
+    country: v.string(),
+    phone: v.string(),
   },
   returns: v.null(),
   handler: async (ctx, args) => {
     const user = await requireUser(ctx);
     const address = {
-      label: requiredText(args.label, "Label", 40),
+      label: requiredText(args.label, "Recipient name", 80),
       addressLine: requiredText(args.addressLine, "Address", 120),
+      addressLine2: optionalLine(args.addressLine2, "Apartment, suite, or unit", 80),
       city: requiredText(args.city, "City", 80),
+      region: requiredText(args.region, "State / Province", 80),
       postalCode: requiredText(args.postalCode, "Postal code", 20),
+      country: requireCountryCode(args.country),
+      phone: shippingPhone(args.phone),
     };
     if (args.addressId !== undefined) {
       const existing = await ctx.db.get("addresses", args.addressId);

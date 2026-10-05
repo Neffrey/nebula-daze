@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { ChangeEvent, FormEvent, useEffect, useRef, useState, type ReactNode } from "react";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
+import { countryName } from "@/lib/countries";
 import { siteUrlForHostname } from "@/lib/siteUrl";
 import AddressAutocomplete from "@/components/AddressAutocomplete";
 import { uploadFiles } from "@/lib/uploadthing";
@@ -261,10 +262,7 @@ function Addresses({
       {defaultAddress ? (
         <div>
           <p className="text-[11px] tracking-[0.16em] uppercase">{defaultAddress.label}</p>
-          <p className="mt-2 text-sm">{defaultAddress.addressLine}</p>
-          <p className="text-sm">
-            {defaultAddress.city} {defaultAddress.postalCode}
-          </p>
+          <AddressLines address={defaultAddress} />
         </div>
       ) : (
         <p className="text-sm text-[#6f675e]">No default address.</p>
@@ -325,10 +323,7 @@ function SavedAddressView({ address, onEdit }: { address: SavedAddress; onEdit: 
   return (
     <div>
       <p className="text-[11px] tracking-[0.16em] uppercase">{address.label}</p>
-      <p className="mt-2 text-sm">{address.addressLine}</p>
-      <p className="text-sm">
-        {address.city} {address.postalCode}
-      </p>
+      <AddressLines address={address} />
       <div className="mt-3 flex flex-wrap items-center gap-4">
         {address.isDefault ? (
           <span className="text-[11px] tracking-[0.16em] uppercase">Default</span>
@@ -385,8 +380,12 @@ function AddressForm({
   const saveAddress = useMutation(api.users.saveAddress);
   const [name, setName] = useState(address?.label ?? "");
   const [addressLine, setAddressLine] = useState(address?.addressLine ?? "");
+  const [addressLine2, setAddressLine2] = useState(address?.addressLine2 ?? "");
   const [city, setCity] = useState(address?.city ?? "");
+  const [region, setRegion] = useState(address?.region ?? "");
   const [postalCode, setPostalCode] = useState(address?.postalCode ?? "");
+  const [country, setCountry] = useState(countryName(address?.country ?? ""));
+  const [phone, setPhone] = useState(address?.phone ?? "");
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
@@ -398,8 +397,12 @@ function AddressForm({
       addressId: address?._id,
       label: name,
       addressLine,
+      addressLine2,
       city,
+      region,
       postalCode,
+      country,
+      phone,
     })
       .then(() => {
         onSaved?.();
@@ -418,7 +421,7 @@ function AddressForm({
         className={inputClass}
         name="label"
         autoComplete="name"
-        placeholder="Name"
+        placeholder="Recipient name"
         value={name}
         onChange={(event) => {
           setName(event.target.value);
@@ -432,12 +435,31 @@ function AddressForm({
           if (place.addressLine) {
             setAddressLine(place.addressLine);
           }
+          if (place.addressLine2) {
+            setAddressLine2(place.addressLine2);
+          }
           if (place.city) {
             setCity(place.city);
+          }
+          if (place.region) {
+            setRegion(place.region);
           }
           if (place.postalCode) {
             setPostalCode(place.postalCode);
           }
+          if (place.country) {
+            setCountry(countryName(place.country));
+          }
+        }}
+      />
+      <input
+        className={inputClass}
+        name="addressLine2"
+        autoComplete="address-line2"
+        placeholder="Apartment, suite, or unit"
+        value={addressLine2}
+        onChange={(event) => {
+          setAddressLine2(event.target.value);
         }}
       />
       <input
@@ -452,12 +474,44 @@ function AddressForm({
       />
       <input
         className={inputClass}
+        name="region"
+        autoComplete="address-level1"
+        placeholder="State / Province"
+        required
+        value={region}
+        onChange={(event) => {
+          setRegion(event.target.value);
+        }}
+      />
+      <input
+        className={inputClass}
         name="postalCode"
         autoComplete="postal-code"
         placeholder="Postal code"
         value={postalCode}
         onChange={(event) => {
           setPostalCode(event.target.value);
+        }}
+      />
+      <input
+        className={inputClass}
+        name="country"
+        autoComplete="country-name"
+        placeholder="Country"
+        required
+        value={country}
+        onChange={(event) => {
+          setCountry(event.target.value);
+        }}
+      />
+      <input
+        className={inputClass}
+        name="phone"
+        autoComplete="tel"
+        placeholder="Phone"
+        value={phone}
+        onChange={(event) => {
+          setPhone(event.target.value);
         }}
       />
       <div className="flex items-center gap-4">
@@ -711,10 +765,34 @@ type SavedAddress = {
   _id: Id<"addresses">;
   label: string;
   addressLine: string;
+  addressLine2: string;
   city: string;
+  region: string;
   postalCode: string;
+  country: string;
+  phone: string;
   isDefault: boolean;
 };
+
+function AddressLines({
+  address,
+}: {
+  address: Pick<SavedAddress, "addressLine" | "addressLine2" | "city" | "region" | "postalCode" | "country" | "phone">;
+}) {
+  const locality = [address.city, address.region].filter((part) => part.length > 0).join(", ");
+  const country = countryName(address.country);
+  return (
+    <>
+      <p className="mt-2 text-sm">{address.addressLine}</p>
+      {address.addressLine2.length > 0 ? <p className="text-sm">{address.addressLine2}</p> : null}
+      <p className="text-sm">
+        {locality} {address.postalCode}
+      </p>
+      {country.length > 0 ? <p className="text-sm">{country}</p> : null}
+      {address.phone.length > 0 ? <p className="text-sm">{address.phone}</p> : null}
+    </>
+  );
+}
 
 function errorMessage(error: unknown) {
   return error instanceof Error ? error.message : "Unable to save";

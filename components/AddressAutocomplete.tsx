@@ -222,17 +222,26 @@ function addressFrom(body: unknown): AddressParts | null {
     body === null ||
     !("addressLine" in body) ||
     typeof body.addressLine !== "string" ||
+    !("addressLine2" in body) ||
+    typeof body.addressLine2 !== "string" ||
     !("city" in body) ||
     typeof body.city !== "string" ||
+    !("region" in body) ||
+    typeof body.region !== "string" ||
     !("postalCode" in body) ||
-    typeof body.postalCode !== "string"
+    typeof body.postalCode !== "string" ||
+    !("country" in body) ||
+    typeof body.country !== "string"
   ) {
     return null;
   }
   return {
     addressLine: body.addressLine,
+    addressLine2: body.addressLine2,
     city: body.city,
+    region: body.region,
     postalCode: body.postalCode,
+    country: body.country,
   };
 }
 

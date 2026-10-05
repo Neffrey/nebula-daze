@@ -9,6 +9,7 @@ import ProfileSecurity from "@/components/ProfileSecurity";
 import SiteHeader from "@/components/SiteHeader";
 import { api } from "@/convex/_generated/api";
 import { formatPrice } from "@/lib/catalog";
+import { countryName } from "@/lib/countries";
 
 const sections = [
   "Profile & Security",
@@ -142,7 +143,7 @@ function Orders() {
               year: "numeric",
             })}
             {" · "}
-            {order.city}
+            {[order.city, order.region, countryName(order.country)].filter((part) => part.length > 0).join(", ")}
           </p>
           <ul className="mt-3 flex flex-col gap-1 text-sm">
             {order.items.map((item) => (

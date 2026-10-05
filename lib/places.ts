@@ -6,8 +6,20 @@ export type PlaceSuggestion = {
 
 export type AddressParts = {
   addressLine: string;
+  addressLine2: string;
   city: string;
+  region: string;
   postalCode: string;
+  country: string;
+};
+
+export const emptyAddress: AddressParts = {
+  addressLine: "",
+  addressLine2: "",
+  city: "",
+  region: "",
+  postalCode: "",
+  country: "",
 };
 
 const sessionTokenPattern = /^[A-Za-z0-9_-]{8,36}$/;
@@ -96,20 +108,24 @@ export function addressFrom(body: unknown): AddressParts {
     componentText(components, "administrative_area_level_2");
   return {
     addressLine,
+    addressLine2: componentText(components, "subpremise"),
     city,
+    region: componentText(components, "administrative_area_level_1"),
     postalCode: componentText(components, "postal_code"),
+    country: componentText(components, "country", "shortText"),
   };
 }
 
-function componentText(components: unknown[], type: string) {
+function componentText(components: unknown[], type: string, field: "longText" | "shortText" = "longText") {
   for (const component of components) {
-    if (!isRecord(component) || !Array.isArray(component.types)) {
+    if (!isRecord(component) || !Array.isArray(component.types) || !component.types.includes(type)) {
       continue;
     }
-    if (!component.types.includes(type) || typeof component.longText !== "string") {
+    const value = component[field];
+    if (typeof value !== "string") {
       continue;
     }
-    return component.longText;
+    return value;
   }
   return "";
 }
