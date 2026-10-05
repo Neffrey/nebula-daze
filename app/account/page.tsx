@@ -4,8 +4,8 @@ import { useAuthActions } from "@convex-dev/auth/react";
 import { useQuery } from "convex/react";
 import Image from "next/image";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useEffect, useRef, useState } from "react";
 import OrderAddress, { type OrderShippingAddress } from "@/components/OrderAddress";
 import ProfileSecurity from "@/components/ProfileSecurity";
 import SiteHeader from "@/components/SiteHeader";
@@ -13,9 +13,41 @@ import { api } from "@/convex/_generated/api";
 import { formatPrice, products } from "@/lib/catalog";
 import { formatOrderNumber } from "@/lib/orderNumber";
 
-const sections = ["Profile & Security", "Orders", "Support"] as const;
+const sectionByQuery = {
+  profile: "Profile & Security",
+  orders: "Orders",
+  support: "Support",
+  tickets: "Tickets",
+} as const;
 
-type Section = (typeof sections)[number];
+type SectionQuery = keyof typeof sectionByQuery;
+type Section = (typeof sectionByQuery)[SectionQuery];
+type AccountRole = "user" | "admin" | "banned";
+
+const sections: readonly Section[] = ["Profile & Security", "Orders", "Support"];
+
+function sectionQuery(section: Section): SectionQuery {
+  if (section === "Orders") {
+    return "orders";
+  }
+  if (section === "Support") {
+    return "support";
+  }
+  if (section === "Tickets") {
+    return "tickets";
+  }
+  return "profile";
+}
+
+function visibleSection(value: string | null, role: AccountRole): SectionQuery {
+  if (value === "orders" || value === "support" || value === "profile") {
+    return value;
+  }
+  if (value === "tickets" && role === "admin") {
+    return "tickets";
+  }
+  return "profile";
+}
 
 export default function AccountPage() {
   const viewer = useQuery(api.users.viewer);
@@ -32,13 +64,16 @@ export default function AccountPage() {
         ) : viewer === null ? (
           <SignedOut />
         ) : (
-          <SignedIn
-            onSignOut={() => {
-              void signOut().then(() => {
-                router.push("/");
-              });
-            }}
-          />
+          <Suspense fallback={<p className="mt-8 text-sm text-muted">Loading</p>}>
+            <SignedIn
+              role={viewer.role}
+              onSignOut={() => {
+                void signOut().then(() => {
+                  router.push("/");
+                });
+              }}
+            />
+          </Suspense>
         )}
       </main>
     </>
@@ -62,31 +97,49 @@ function SignedOut() {
   );
 }
 
-function SignedIn({ onSignOut }: { onSignOut: () => void }) {
-  const [section, setSection] = useState<Section>("Profile & Security");
+function SignedIn({
+  role,
+  onSignOut,
+}: {
+  role: AccountRole;
+  onSignOut: () => void;
+}) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const requested = searchParams.get("section");
+  const query = visibleSection(requested, role);
+  const section = sectionByQuery[query];
+  const items: readonly Section[] = role === "admin" ? [...sections, "Tickets"] : sections;
+
+  useEffect(() => {
+    if (requested === query) {
+      return;
+    }
+    const params = new URLSearchParams(window.location.search);
+    params.set("section", query);
+    router.replace(`/account?${params.toString()}`, { scroll: false });
+  }, [query, requested, router]);
 
   return (
     <div className="mt-10 grid items-start gap-10 md:grid-cols-[13rem_1fr] md:gap-16">
       <nav aria-label="Account">
         <ul className="flex flex-col">
-          {sections.map((item) => {
+          {items.map((item) => {
             const selected = item === section;
             return (
               <li key={item}>
-                <button
-                  type="button"
+                <Link
+                  href={`/account?section=${sectionQuery(item)}`}
+                  scroll={false}
                   aria-current={selected ? "page" : undefined}
-                  className={`w-full border-l px-4 py-3 text-left text-[11px] tracking-[0.16em] uppercase ${
+                  className={`block w-full border-l px-4 py-3 text-left text-[11px] tracking-[0.16em] uppercase ${
                     selected
                       ? "border-foreground"
                       : "border-transparent text-muted"
                   }`}
-                  onClick={() => {
-                    setSection(item);
-                  }}
                 >
                   {item}
-                </button>
+                </Link>
               </li>
             );
           })}
