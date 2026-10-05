@@ -51,6 +51,8 @@ export default defineSchema({
     phone: v.optional(v.string()),
     total: v.number(),
     placedAt: v.number(),
+    paymentStatus: v.optional(v.union(v.literal("pending"), v.literal("paid"))),
+    stripeCheckoutSessionId: v.optional(v.string()),
   }).index("by_userId", ["userId"]),
   orderItems: defineTable({
     orderId: v.id("orders"),

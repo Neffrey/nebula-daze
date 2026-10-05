@@ -10,6 +10,7 @@ type CartContextValue = {
   count: number;
   add: (product: Product) => void;
   remove: (name: string) => void;
+  replace: (lines: CartLine[]) => void;
   clear: () => void;
 };
 
@@ -37,6 +38,9 @@ export default function CartProvider({ children }: { children: ReactNode }) {
       },
       remove(name) {
         setLines((current) => current.filter((line) => line.name !== name));
+      },
+      replace(next) {
+        setLines(next);
       },
       clear() {
         setLines([]);

@@ -13,6 +13,7 @@
   "dependencies": {
     "@auth/core": "0.41.3",
     "@convex-dev/auth": "^0.0.95",
+    "@convex-dev/stripe": "^0.1.6",
     "@t3-oss/env-nextjs": "^0.13.11",
     "@uploadthing/react": "^7.3.3",
     "convex": "^1.44.0",

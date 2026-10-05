@@ -1,24 +1,27 @@
 "use client";
 
-import { useMutation, useQuery } from "convex/react";
+import { useAction, useQuery } from "convex/react";
 import Link from "next/link";
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useRef, useState } from "react";
 import AddressAutocomplete from "@/components/AddressAutocomplete";
 import SavedAddresses from "@/components/SavedAddresses";
 import SiteHeader from "@/components/SiteHeader";
-import { useCart } from "@/components/CartProvider";
+import { useCart, type CartLine } from "@/components/CartProvider";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
-import { formatPrice } from "@/lib/catalog";
+import { formatPrice, products } from "@/lib/catalog";
 import { countryName } from "@/lib/countries";
 
+const CHECKOUT_BAG_KEY = "narel-checkout-bag";
+
 export default function CheckoutPage() {
-  const { lines, clear } = useCart();
+  const { lines, replace, clear } = useCart();
   const profile = useQuery(api.users.profile);
-  const placeOrder = useMutation(api.orders.place);
+  const pay = useAction(api.checkout.pay);
   const [error, setError] = useState<string | null>(null);
   const [placing, setPlacing] = useState(false);
-  const [placedTotal, setPlacedTotal] = useState<number | null>(null);
+  const [ready, setReady] = useState(false);
+  const [returnOrderId, setReturnOrderId] = useState<Id<"orders"> | null>(null);
   const [addressLine, setAddressLine] = useState("");
   const [addressLine2, setAddressLine2] = useState("");
   const [city, setCity] = useState("");
@@ -27,6 +30,12 @@ export default function CheckoutPage() {
   const [country, setCountry] = useState("");
   const [phone, setPhone] = useState("");
   const [shippingAddressId, setShippingAddressId] = useState<Id<"addresses"> | null>(null);
+  const restored = useRef(false);
+  const clearedPayment = useRef(false);
+  const payment = useQuery(
+    api.orders.status,
+    returnOrderId ? { orderId: returnOrderId } : "skip",
+  );
 
   const subtotal = lines.reduce((sum, line) => sum + line.price * line.quantity, 0);
   const defaultAddress =
@@ -38,40 +47,85 @@ export default function CheckoutPage() {
       ? null
       : (profile.addresses.find((address) => address._id === shippingAddressId) ?? defaultAddress);
 
-  function placeSaved() {
-    if (shippingAddress === null) {
+  useEffect(() => {
+    if (restored.current) {
       return;
     }
+    restored.current = true;
+    const orderId = new URLSearchParams(window.location.search).get("order");
+    if (orderId) {
+      setReturnOrderId(orderId as Id<"orders">);
+      setReady(true);
+      return;
+    }
+    const saved = readSavedCheckout();
+    if (saved) {
+      if (lines.length === 0) {
+        replace(saved.lines);
+      }
+      if (saved.shippingAddressId) {
+        setShippingAddressId(saved.shippingAddressId);
+      }
+    }
+    setReady(true);
+  }, [lines.length, replace]);
+
+  useEffect(() => {
+    if (!payment?.paid || clearedPayment.current) {
+      return;
+    }
+    clearedPayment.current = true;
+    clear();
+    sessionStorage.removeItem(CHECKOUT_BAG_KEY);
+  }, [payment?.paid, clear]);
+
+  function startCardPayment(shipping: {
+    shipName: string;
+    addressLine: string;
+    addressLine2: string;
+    city: string;
+    region: string;
+    postalCode: string;
+    country: string;
+    phone: string;
+  }) {
     setPlacing(true);
     setError(null);
-    void placeOrder({
+    rememberCheckout(lines, shippingAddressId);
+    void pay({
       items: lines.map((line) => ({ name: line.name, quantity: line.quantity })),
-      shipName: shippingAddress.label,
-      addressLine: shippingAddress.addressLine,
-      addressLine2: shippingAddress.addressLine2,
-      city: shippingAddress.city,
-      region: shippingAddress.region,
-      postalCode: shippingAddress.postalCode,
-      country: shippingAddress.country,
-      phone: shippingAddress.phone,
+      origin: window.location.origin,
+      ...shipping,
     })
-      .then((order) => {
-        clear();
-        setPlacedTotal(order.total);
+      .then((session) => {
+        window.location.assign(session.url);
       })
-      .catch((placeError: unknown) => {
-        setError(placeError instanceof Error ? placeError.message : "Unable to place the order");
+      .catch((payError: unknown) => {
+        setError(payErrorMessage(payError));
         setPlacing(false);
       });
   }
 
+  function placeSaved() {
+    if (shippingAddress === null) {
+      return;
+    }
+    startCardPayment({
+      shipName: shippingAddress.label,
+      addressLine: shippingAddress.addressLine,
+      addressLine2: shippingAddress.addressLine2 ?? "",
+      city: shippingAddress.city,
+      region: shippingAddress.region ?? "",
+      postalCode: shippingAddress.postalCode,
+      country: shippingAddress.country ?? "",
+      phone: shippingAddress.phone ?? "",
+    });
+  }
+
   function place(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setPlacing(true);
-    setError(null);
     const formData = new FormData(event.currentTarget);
-    void placeOrder({
-      items: lines.map((line) => ({ name: line.name, quantity: line.quantity })),
+    startCardPayment({
       shipName: String(formData.get("shipName") ?? ""),
       addressLine,
       addressLine2,
@@ -80,15 +134,7 @@ export default function CheckoutPage() {
       postalCode,
       country,
       phone,
-    })
-      .then((order) => {
-        clear();
-        setPlacedTotal(order.total);
-      })
-      .catch((placeError: unknown) => {
-        setError(placeError instanceof Error ? placeError.message : "Unable to place the order");
-        setPlacing(false);
-      });
+    });
   }
 
   return (
@@ -96,8 +142,14 @@ export default function CheckoutPage() {
       <SiteHeader />
       <main className="mx-auto flex min-h-[70vh] w-full max-w-3xl flex-col px-6 py-16">
         <p className="text-[11px] tracking-[0.22em] uppercase">Checkout</p>
-        {placedTotal !== null ? (
-          <Placed total={placedTotal} />
+        {!ready || (returnOrderId !== null && payment === undefined) ? (
+          <p className="mt-8 text-sm text-[#6f675e]">Loading</p>
+        ) : payment?.paid ? (
+          <Placed total={payment.total} />
+        ) : returnOrderId !== null && payment !== undefined && payment !== null && !payment.paid ? (
+          <Confirming />
+        ) : returnOrderId !== null && payment === null ? (
+          <MissingPayment />
         ) : lines.length === 0 ? (
           <EmptyBag />
         ) : profile === undefined ? (
@@ -123,7 +175,7 @@ export default function CheckoutPage() {
                     disabled={placing}
                     onClick={placeSaved}
                   >
-                    {placing ? "Please wait" : "Place order"}
+                    {placing ? "Please wait" : "Pay with card"}
                   </button>
                   {error && <p className="text-sm text-rose-800">{error}</p>}
                 </>
@@ -240,7 +292,7 @@ export default function CheckoutPage() {
                 className="mt-2 bg-[#141210] py-3 text-[11px] tracking-[0.22em] text-[#f4f1eb] uppercase disabled:opacity-50"
                 disabled={placing}
               >
-                {placing ? "Please wait" : "Place order"}
+                {placing ? "Please wait" : "Pay with card"}
               </button>
               {error && <p className="text-sm text-rose-800">{error}</p>}
             </form>
@@ -305,10 +357,76 @@ function Summary({
         <span>{formatPrice(subtotal)}</span>
       </p>
       <p className="mt-3 text-sm text-[#6f675e]">
-        Complimentary shipping on orders over $200.
+        Complimentary shipping on orders over $200. Your card is entered on Stripe, and the order is placed after the payment is confirmed.
       </p>
     </aside>
   );
+}
+
+function payErrorMessage(error: unknown) {
+  const message = error instanceof Error ? error.message : "";
+  const uncaught = message.match(/Uncaught Error: (.*?)(?:\s+at\s+|$)/);
+  if (uncaught?.[1]) {
+    return uncaught[1];
+  }
+  if (message.length > 0 && !message.includes("[CONVEX")) {
+    return message;
+  }
+  return "Card checkout could not be started";
+}
+
+function rememberCheckout(lines: CartLine[], shippingAddressId: Id<"addresses"> | null) {
+  sessionStorage.setItem(
+    CHECKOUT_BAG_KEY,
+    JSON.stringify({
+      lines: lines.map((line) => ({ name: line.name, quantity: line.quantity })),
+      shippingAddressId,
+    }),
+  );
+}
+
+function readSavedCheckout(): { lines: CartLine[]; shippingAddressId: Id<"addresses"> | null } | null {
+  const raw = sessionStorage.getItem(CHECKOUT_BAG_KEY);
+  if (raw === null) {
+    return null;
+  }
+
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    return null;
+  }
+  if (typeof parsed !== "object" || parsed === null || !("lines" in parsed) || !Array.isArray(parsed.lines)) {
+    return null;
+  }
+
+  const lines: CartLine[] = [];
+  for (const entry of parsed.lines) {
+    if (typeof entry !== "object" || entry === null || !("name" in entry) || !("quantity" in entry)) {
+      continue;
+    }
+    if (typeof entry.name !== "string" || typeof entry.quantity !== "number") {
+      continue;
+    }
+    if (!Number.isInteger(entry.quantity) || entry.quantity < 1 || entry.quantity > 10) {
+      continue;
+    }
+    const product = products.find((item) => item.name === entry.name);
+    if (!product) {
+      continue;
+    }
+    lines.push({ ...product, quantity: entry.quantity });
+  }
+  if (lines.length === 0) {
+    return null;
+  }
+
+  const shippingAddressId =
+    "shippingAddressId" in parsed && typeof parsed.shippingAddressId === "string"
+      ? (parsed.shippingAddressId as Id<"addresses">)
+      : null;
+  return { lines, shippingAddressId };
 }
 
 function EmptyBag() {
@@ -342,12 +460,40 @@ function SignInPrompt() {
   );
 }
 
+function Confirming() {
+  return (
+    <div className="mt-8">
+      <h1 className="font-display text-5xl leading-none">Confirming payment</h1>
+      <p className="mt-4 max-w-md text-sm leading-6 text-[#6f675e]">
+        Stripe accepted the return from checkout. This page updates when the payment is confirmed.
+      </p>
+    </div>
+  );
+}
+
+function MissingPayment() {
+  return (
+    <div className="mt-8">
+      <h1 className="font-display text-5xl leading-none">Payment not found</h1>
+      <p className="mt-4 max-w-md text-sm leading-6 text-[#6f675e]">
+        That payment is not on this account.
+      </p>
+      <Link
+        href="/"
+        className="mt-8 inline-block text-[11px] tracking-[0.18em] uppercase underline underline-offset-4"
+      >
+        Continue shopping
+      </Link>
+    </div>
+  );
+}
+
 function Placed({ total }: { total: number }) {
   return (
     <div className="mt-8">
       <h1 className="font-display text-5xl leading-none">Order placed</h1>
       <p className="mt-4 max-w-md text-sm leading-6 text-[#6f675e]">
-        We have your order for {formatPrice(total)}. It is waiting on your account.
+        Your card payment for {formatPrice(total)} is confirmed. The order is waiting on your account.
       </p>
       <Link
         href="/account"

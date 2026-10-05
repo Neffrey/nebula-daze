@@ -5,9 +5,7 @@ settings:
   excludeLinksFromLockfile: false
 
 patchedDependencies:
-  '@convex-dev/auth@0.0.95':
-    hash: 9b5bac8b1d698c06c37d860b6ebbcbb06dc91d011e569e6cb3f125e8bba55c37
-    path: patches/@convex-dev__auth@0.0.95.patch
+  '@convex-dev/auth@0.0.95': 9b5bac8b1d698c06c37d860b6ebbcbb06dc91d011e569e6cb3f125e8bba55c37
 
 importers:
 
@@ -19,6 +17,9 @@ importers:
       '@convex-dev/auth':
         specifier: ^0.0.95
         version: 0.0.95(patch_hash=9b5bac8b1d698c06c37d860b6ebbcbb06dc91d011e569e6cb3f125e8bba55c37)(@auth/core@0.41.3)(convex@1.46.0(react@19.3.0))(react@19.3.0)
+      '@convex-dev/stripe':
+        specifier: ^0.1.6
+        version: 0.1.6(@types/node@24.19.1)(convex@1.46.0(react@19.3.0))(react@19.3.0)
       '@t3-oss/env-nextjs':
         specifier: ^0.13.11
         version: 0.13.11(typescript@6.0.3)(zod@4.6.5)
@@ -183,6 +184,12 @@ packages:
     resolution: {integrity: sha512-UFhZ7bJBo4mTfa829/mntoAwyC9aKwXe6dxCV7PianSdAfFIbdCwCjWPBmhqn1hNlpqhVU385C/vjL8CXfxA2Q==}
     peerDependencies:
       convex: ^1.43.0
+
+  '@convex-dev/stripe@0.1.6':
+    resolution: {integrity: sha512-6+DLM6QDLiFYeBKwJGlPrpm9tgZKe/EWlTYcbLyIKqS5q4xZHjTsyvFE98TD0hPLfniVVoD+/rO+PAnhSsNXkg==}
+    peerDependencies:
+      convex: ^1.29.3
+      react: ^18.3.1 || ^19.0.0
 
   '@effect/platform@0.90.3':
     resolution: {integrity: sha512-XvQ37yzWQKih4Du2CYladd1i/MzqtgkTPNCaN6Ku6No4CK83hDtXIV/rP03nEoBg2R3Pqgz6gGWmE2id2G81HA==}
@@ -2468,6 +2475,15 @@ packages:
     resolution: {integrity: sha512-6fPc+R4ihwqP6N/aIv2f1gMH8lOVtWQHoqC4yK6oSDVVocumAsfCqjkXnqiYMhmMwS/mEHLp7Vehlt3ql6lEig==}
     engines: {node: '>=8'}
 
+  stripe@22.6.2:
+    resolution: {integrity: sha512-PwRE2scocvXqDKPiskMa5vRJEAEkq46W69XyUYmAwrNSLr675lQnfqLwnsndAWizwgihOWw/irLmoFRo3ez7ew==}
+    engines: {node: '>=18'}
+    peerDependencies:
+      '@types/node': '>=18'
+    peerDependenciesMeta:
+      '@types/node':
+        optional: true
+
   styled-jsx@5.1.6:
     resolution: {integrity: sha512-qSVyDTeMotdvQYoHWLNGwRFJHC+i+ZvdBRYosOFgC+Wg1vx4frN2/RG/NA7SYqqvKNLf39P2LSRA2pu6n0XYZA==}
     engines: {node: '>= 12.0.0'}
@@ -2784,6 +2800,14 @@ snapshots:
       - eslint
       - supports-color
       - typescript
+
+  '@convex-dev/stripe@0.1.6(@types/node@24.19.1)(convex@1.46.0(react@19.3.0))(react@19.3.0)':
+    dependencies:
+      convex: 1.46.0(react@19.3.0)
+      react: 19.3.0
+      stripe: 22.6.2(@types/node@24.19.1)
+    transitivePeerDependencies:
+      - '@types/node'
 
   '@effect/platform@0.90.3(effect@3.17.7)':
     dependencies:
@@ -5045,6 +5069,10 @@ snapshots:
   strip-bom@3.0.0: {}
 
   strip-json-comments@3.1.1: {}
+
+  stripe@22.6.2(@types/node@24.19.1):
+    optionalDependencies:
+      '@types/node': 24.19.1
 
   styled-jsx@5.1.6(@babel/core@7.29.7(supports-color@7.2.0))(react@19.3.0):
     dependencies:

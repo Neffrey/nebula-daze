@@ -162,7 +162,7 @@ function Orders() {
 function Payments() {
   return (
     <p className="mt-8 max-w-md text-sm leading-6 text-[#6f675e]">
-      No payment methods saved. Narel does not keep a card on file.
+      Cards are charged at checkout through Stripe. Narel does not keep a card on file.
     </p>
   );
 }

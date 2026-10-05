@@ -9,6 +9,7 @@
  */
 
 import type * as auth from "../auth.js";
+import type * as checkout from "../checkout.js";
 import type * as googleAccount from "../googleAccount.js";
 import type * as http from "../http.js";
 import type * as orders from "../orders.js";
@@ -22,6 +23,7 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   auth: typeof auth;
+  checkout: typeof checkout;
   googleAccount: typeof googleAccount;
   http: typeof http;
   orders: typeof orders;
@@ -54,4 +56,6 @@ export declare const internal: FilterApi<
   FunctionReference<any, "internal">
 >;
 
-export declare const components: {};
+export declare const components: {
+  stripe: import("@convex-dev/stripe/_generated/component.js").ComponentApi<"stripe">;
+};

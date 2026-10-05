@@ -1,6 +1,7 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
-import { mutation, query } from "./_generated/server";
+import type { MutationCtx } from "./_generated/server";
+import { internalMutation, query } from "./_generated/server";
 import { products } from "../lib/catalog";
 import { requireCountryCode } from "../lib/countries";
 import { optionalLine, shippingPhone } from "../lib/shippingAddress";
@@ -8,6 +9,24 @@ import { optionalLine, shippingPhone } from "../lib/shippingAddress";
 const itemArgs = v.object({
   name: v.string(),
   quantity: v.number(),
+});
+
+export const checkoutArgs = {
+  items: v.array(itemArgs),
+  shipName: v.string(),
+  addressLine: v.string(),
+  addressLine2: v.string(),
+  city: v.string(),
+  region: v.string(),
+  postalCode: v.string(),
+  country: v.string(),
+  phone: v.string(),
+};
+
+const pricedLine = v.object({
+  name: v.string(),
+  quantity: v.number(),
+  unitPrice: v.number(),
 });
 
 const listedOrder = v.object({
@@ -39,10 +58,16 @@ export const listMine = query({
       .query("orders")
       .withIndex("by_userId", (q) => q.eq("userId", userId))
       .order("desc")
-      .take(20);
+      .take(40);
 
     const listed = [];
     for (const order of orders) {
+      if (order.paymentStatus === "pending") {
+        continue;
+      }
+      if (listed.length >= 20) {
+        break;
+      }
       const items = await ctx.db
         .query("orderItems")
         .withIndex("by_orderId", (q) => q.eq("orderId", order._id))
@@ -65,83 +90,52 @@ export const listMine = query({
   },
 });
 
-export const place = mutation({
-  args: {
-    items: v.array(itemArgs),
-    shipName: v.string(),
-    addressLine: v.string(),
-    addressLine2: v.string(),
-    city: v.string(),
-    region: v.string(),
-    postalCode: v.string(),
-    country: v.string(),
-    phone: v.string(),
-  },
-  returns: v.object({
-    orderId: v.id("orders"),
-    total: v.number(),
-  }),
+export const status = query({
+  args: { orderId: v.id("orders") },
+  returns: v.union(v.object({ total: v.number(), paid: v.boolean() }), v.null()),
   handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
     if (userId === null) {
-      throw new Error("Sign in to place an order");
+      return null;
     }
 
-    const shipName = requireText(args.shipName, "Recipient name", 80);
-    const addressLine = requireText(args.addressLine, "Address", 120);
-    const addressLine2 = optionalLine(args.addressLine2, "Apartment, suite, or unit", 80);
-    const city = requireText(args.city, "City", 80);
-    const region = requireText(args.region, "State / Province", 80);
-    const postalCode = requireText(args.postalCode, "Postal code", 20);
-    const country = requireCountryCode(args.country);
-    const phone = shippingPhone(args.phone);
-
-    if (args.items.length === 0 || args.items.length > 20) {
-      throw new Error("Your bag is empty");
+    const order = await ctx.db.get("orders", args.orderId);
+    if (order === null || order.userId !== userId) {
+      return null;
     }
 
-    const quantities = new Map<string, number>();
-    for (const item of args.items) {
-      if (!Number.isInteger(item.quantity) || item.quantity < 1 || item.quantity > 10) {
-        throw new Error("Quantity must be between 1 and 10");
-      }
-      const product = products.find((entry) => entry.name === item.name);
-      if (!product) {
-        throw new Error("That piece is no longer available");
-      }
-      const next = (quantities.get(item.name) ?? 0) + item.quantity;
-      if (next > 10) {
-        throw new Error("Quantity must be between 1 and 10");
-      }
-      quantities.set(item.name, next);
-    }
+    return {
+      total: order.total,
+      paid: order.paymentStatus !== "pending",
+    };
+  },
+});
 
-    let total = 0;
-    const lines = [];
-    for (const [name, quantity] of quantities) {
-      const product = products.find((entry) => entry.name === name);
-      if (!product) {
-        throw new Error("That piece is no longer available");
-      }
-      total += product.price * quantity;
-      lines.push({ name, quantity, unitPrice: product.price });
-    }
-
+export const insertPending = internalMutation({
+  args: checkoutArgs,
+  returns: v.object({
+    orderId: v.id("orders"),
+    total: v.number(),
+    lines: v.array(pricedLine),
+  }),
+  handler: async (ctx, args) => {
+    const built = await buildOrder(ctx, args);
     const orderId = await ctx.db.insert("orders", {
-      userId,
-      shipName,
-      addressLine,
-      addressLine2,
-      city,
-      region,
-      postalCode,
-      country,
-      phone,
-      total,
+      userId: built.userId,
+      shipName: built.shipName,
+      addressLine: built.addressLine,
+      addressLine2: built.addressLine2,
+      city: built.city,
+      region: built.region,
+      postalCode: built.postalCode,
+      country: built.country,
+      phone: built.phone,
+      total: built.total,
       placedAt: Date.now(),
+      paymentStatus: "pending",
     });
 
-    for (const line of lines) {
+    for (const line of built.lines) {
       await ctx.db.insert("orderItems", {
         orderId,
         name: line.name,
@@ -150,9 +144,151 @@ export const place = mutation({
       });
     }
 
-    return { orderId, total };
+    return { orderId, total: built.total, lines: built.lines };
   },
 });
+
+export const attachCheckoutSession = internalMutation({
+  args: {
+    orderId: v.id("orders"),
+    sessionId: v.string(),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (userId === null) {
+      throw new Error("Sign in to place an order");
+    }
+
+    const order = await ctx.db.get("orders", args.orderId);
+    if (order === null || order.userId !== userId || order.paymentStatus !== "pending") {
+      throw new Error("Order not found");
+    }
+
+    await ctx.db.patch("orders", args.orderId, {
+      stripeCheckoutSessionId: args.sessionId,
+    });
+    return null;
+  },
+});
+
+export const markPaid = internalMutation({
+  args: {
+    orderId: v.id("orders"),
+    userId: v.string(),
+    amountTotal: v.number(),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const order = await ctx.db.get("orders", args.orderId);
+    if (order === null || order.userId !== args.userId || order.paymentStatus !== "pending") {
+      console.error("Stripe payment did not match a pending order");
+      return null;
+    }
+    if (order.total * 100 !== args.amountTotal) {
+      console.error("Stripe amount did not match the order");
+      return null;
+    }
+
+    await ctx.db.patch("orders", args.orderId, { paymentStatus: "paid" });
+    return null;
+  },
+});
+
+export const abandonPending = internalMutation({
+  args: {
+    orderId: v.id("orders"),
+    userId: v.string(),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const order = await ctx.db.get("orders", args.orderId);
+    if (order === null || order.userId !== args.userId || order.paymentStatus !== "pending") {
+      return null;
+    }
+
+    const items = await ctx.db
+      .query("orderItems")
+      .withIndex("by_orderId", (q) => q.eq("orderId", order._id))
+      .take(20);
+    for (const item of items) {
+      await ctx.db.delete("orderItems", item._id);
+    }
+    await ctx.db.delete("orders", order._id);
+    return null;
+  },
+});
+
+async function buildOrder(ctx: MutationCtx, args: {
+  items: { name: string; quantity: number }[];
+  shipName: string;
+  addressLine: string;
+  addressLine2: string;
+  city: string;
+  region: string;
+  postalCode: string;
+  country: string;
+  phone: string;
+}) {
+  const userId = await getAuthUserId(ctx);
+  if (userId === null) {
+    throw new Error("Sign in to place an order");
+  }
+
+  const shipName = requireText(args.shipName, "Recipient name", 80);
+  const addressLine = requireText(args.addressLine, "Address", 120);
+  const addressLine2 = optionalLine(args.addressLine2, "Apartment, suite, or unit", 80);
+  const city = requireText(args.city, "City", 80);
+  const region = requireText(args.region, "State / Province", 80);
+  const postalCode = requireText(args.postalCode, "Postal code", 20);
+  const country = requireCountryCode(args.country);
+  const phone = shippingPhone(args.phone);
+
+  if (args.items.length === 0 || args.items.length > 20) {
+    throw new Error("Your bag is empty");
+  }
+
+  const quantities = new Map<string, number>();
+  for (const item of args.items) {
+    if (!Number.isInteger(item.quantity) || item.quantity < 1 || item.quantity > 10) {
+      throw new Error("Quantity must be between 1 and 10");
+    }
+    const product = products.find((entry) => entry.name === item.name);
+    if (!product) {
+      throw new Error("That piece is no longer available");
+    }
+    const next = (quantities.get(item.name) ?? 0) + item.quantity;
+    if (next > 10) {
+      throw new Error("Quantity must be between 1 and 10");
+    }
+    quantities.set(item.name, next);
+  }
+
+  let total = 0;
+  const lines: { name: string; quantity: number; unitPrice: number }[] = [];
+  for (const [name, quantity] of quantities) {
+    const product = products.find((entry) => entry.name === name);
+    if (!product) {
+      throw new Error("That piece is no longer available");
+    }
+    total += product.price * quantity;
+    lines.push({ name, quantity, unitPrice: product.price });
+  }
+
+  return {
+    userId,
+    shipName,
+    addressLine,
+    addressLine2,
+    city,
+    region,
+    postalCode,
+    country,
+    phone,
+    total,
+    lines,
+  };
+}
 
 function requireText(value: string, label: string, maxLength: number) {
   const trimmed = value.trim();
