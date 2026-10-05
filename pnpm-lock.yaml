@@ -5,7 +5,9 @@ settings:
   excludeLinksFromLockfile: false
 
 patchedDependencies:
-  '@convex-dev/auth@0.0.95': 9b5bac8b1d698c06c37d860b6ebbcbb06dc91d011e569e6cb3f125e8bba55c37
+  '@convex-dev/auth@0.0.95':
+    hash: 9b5bac8b1d698c06c37d860b6ebbcbb06dc91d011e569e6cb3f125e8bba55c37
+    path: patches/@convex-dev__auth@0.0.95.patch
 
 importers:
 
