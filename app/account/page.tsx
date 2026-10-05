@@ -1,7 +1,7 @@
 "use client";
 
 import { useAuthActions } from "@convex-dev/auth/react";
-import { useQuery } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -10,6 +10,7 @@ import OrderAddress, { type OrderShippingAddress } from "@/components/OrderAddre
 import ProfileSecurity from "@/components/ProfileSecurity";
 import SiteHeader from "@/components/SiteHeader";
 import { api } from "@/convex/_generated/api";
+import type { Id } from "@/convex/_generated/dataModel";
 import { formatPrice, products } from "@/lib/catalog";
 import { formatOrderNumber } from "@/lib/orderNumber";
 
@@ -340,14 +341,281 @@ function OrderFact({ label, children }: { label: string; children: string }) {
   );
 }
 
+const supportViews = ["New ticket", "active tickets", "archived tickets"] as const;
+
+type SupportView = (typeof supportViews)[number];
+
 function Support() {
+  const [view, setView] = useState<SupportView>("New ticket");
+
   return (
-    <p className="mt-8 max-w-md text-sm leading-6 text-muted">
-      Write the house at{" "}
-      <a href="mailto:hello@example.com" className="text-foreground underline underline-offset-4">
-        hello@example.com
-      </a>
-      .
-    </p>
+    <div className="mt-8">
+      <nav aria-label="Support">
+        <ul className="flex flex-wrap gap-x-6 border-b border-foreground/10">
+          {supportViews.map((item) => {
+            const selected = item === view;
+            return (
+              <li key={item}>
+                <button
+                  type="button"
+                  aria-current={selected ? "page" : undefined}
+                  className={`border-b py-3 text-sm ${
+                    selected ? "border-foreground" : "border-transparent text-muted"
+                  }`}
+                  onClick={() => {
+                    setView(item);
+                  }}
+                >
+                  {item}
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      </nav>
+      {view === "New ticket" ? <NewTicket /> : <TicketList archived={view === "archived tickets"} />}
+    </div>
   );
 }
+
+function NewTicket() {
+  const orders = useQuery(api.orders.listMine);
+  const createTicket = useMutation(api.tickets.create);
+  const [orderId, setOrderId] = useState<Id<"orders"> | "">("");
+  const [message, setMessage] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [sent, setSent] = useState(false);
+  const recent =
+    orders === undefined ? undefined : [...orders].sort((left, right) => right.placedAt - left.placedAt);
+
+  return (
+    <form
+      className="mt-8 max-w-md"
+      onSubmit={(event) => {
+        event.preventDefault();
+        if (recent === undefined || saving) {
+          return;
+        }
+        setSaving(true);
+        setError(null);
+        setSent(false);
+        void createTicket({
+          message,
+          ...(orderId === "" ? {} : { orderId }),
+        })
+          .then(() => {
+            setOrderId("");
+            setMessage("");
+            setSent(true);
+          })
+          .catch((submitError: unknown) => {
+            setError(ticketError(submitError));
+          })
+          .finally(() => {
+            setSaving(false);
+          });
+      }}
+    >
+      <label className="block text-sm" htmlFor="ticket-order">
+        is this about a recent order
+      </label>
+      <select
+        id="ticket-order"
+        className={`${ticketFieldClass} mt-3`}
+        value={orderId}
+        disabled={recent === undefined || saving}
+        onChange={(event) => {
+          const match = recent?.find((order) => order._id === event.target.value);
+          setSent(false);
+          setOrderId(match?._id ?? "");
+        }}
+      >
+        <option value="">no</option>
+        {recent?.map((order) => (
+          <option key={order._id} value={order._id}>
+            {orderChoice(order)}
+          </option>
+        ))}
+      </select>
+      <label className="mt-8 block text-sm" htmlFor="ticket-message">
+        how can we help you?
+      </label>
+      <textarea
+        id="ticket-message"
+        className={`${ticketFieldClass} mt-3 min-h-32`}
+        value={message}
+        required
+        disabled={saving}
+        onChange={(event) => {
+          setSent(false);
+          setMessage(event.target.value);
+        }}
+      />
+      <button
+        type="submit"
+        className="mt-6 border border-foreground/20 px-6 py-3 text-[11px] tracking-[0.22em] uppercase disabled:opacity-50"
+        disabled={saving || recent === undefined}
+      >
+        {saving ? "Sending" : "Send"}
+      </button>
+      {error ? <p className="mt-4 text-sm">{error}</p> : null}
+      {sent ? <p className="mt-4 text-sm">Ticket sent.</p> : null}
+      <p className="mt-8 text-sm leading-6 text-muted">
+        Write the house at{" "}
+        <a href="mailto:hello@example.com" className="text-foreground underline underline-offset-4">
+          hello@example.com
+        </a>
+        .
+      </p>
+    </form>
+  );
+}
+
+function TicketList({ archived }: { archived: boolean }) {
+  const tickets = useQuery(api.tickets.listMine);
+  if (tickets === undefined) {
+    return <p className="mt-8 text-sm text-muted">Loading</p>;
+  }
+
+  const shown = tickets.filter((ticket) => ticket.status === (archived ? "archived" : "active"));
+  if (shown.length === 0) {
+    return (
+      <p className="mt-8 text-sm text-muted">
+        {archived ? "No archived tickets." : "No active tickets."}
+      </p>
+    );
+  }
+
+  return (
+    <ul className="mt-2">
+      {shown.map((ticket) => (
+        <TicketRow key={ticket._id} ticket={ticket} />
+      ))}
+    </ul>
+  );
+}
+
+function TicketRow({
+  ticket,
+}: {
+  ticket: {
+    _id: Id<"tickets">;
+    createdAt: number;
+    orderNumber: string | null;
+    preview: string;
+  };
+}) {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <li className="border-b border-foreground/10">
+      <button
+        type="button"
+        aria-expanded={open}
+        className="w-full py-4 text-left"
+        onClick={() => {
+          setOpen((current) => !current);
+        }}
+      >
+        <p className="text-sm">
+          {new Date(ticket.createdAt).toLocaleDateString("en-US", {
+            month: "long",
+            day: "numeric",
+            year: "numeric",
+          })}
+        </p>
+        {ticket.orderNumber === null ? null : (
+          <p className="mt-1 text-sm">Order #{formatOrderNumber(ticket.orderNumber)}</p>
+        )}
+        <p className="mt-2 text-sm text-muted">{ticket.preview}</p>
+      </button>
+      {open ? <TicketLog ticketId={ticket._id} /> : null}
+    </li>
+  );
+}
+
+function TicketLog({ ticketId }: { ticketId: Id<"tickets"> }) {
+  const messages = useQuery(api.tickets.messages, { ticketId });
+  if (messages === undefined) {
+    return <p className="pb-4 text-sm text-muted">Loading</p>;
+  }
+  if (messages === null || messages.length === 0) {
+    return null;
+  }
+
+  return (
+    <ol className="mb-4 flex max-h-80 flex-col gap-3 overflow-y-auto bg-background px-3 py-4">
+      {messages.map((entry) => {
+        const support = entry.from === "support";
+        return (
+          <li
+            key={entry._id}
+            className={`flex items-end gap-2 ${support ? "justify-start" : "justify-end"}`}
+          >
+            {support ? <ChatAvatar image={entry.image} name={entry.name} /> : null}
+            <p
+              className={`max-w-[75%] rounded-md px-3 py-2 text-sm leading-5 text-[#141210] ${
+                support ? "bg-[#7ec8f0]" : "bg-[#ececec]"
+              }`}
+            >
+              <span className="sr-only">{support ? "Support" : "You"}. </span>
+              {entry.message}
+            </p>
+            {support ? null : <ChatAvatar image={entry.image} name={entry.name} />}
+          </li>
+        );
+      })}
+    </ol>
+  );
+}
+
+function ChatAvatar({ image, name }: { image: string | null; name: string | null }) {
+  const label = name?.trim() ?? "";
+  const letter = label.charAt(0).toLocaleUpperCase();
+  return (
+    <span className="flex w-14 shrink-0 flex-col items-center gap-1">
+      {image !== null ? (
+        // Profile photos can come from Google, UploadThing, or Convex storage.
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={image}
+          alt=""
+          className="size-7 rounded-full border border-[#d0d0d0] object-cover"
+        />
+      ) : (
+        <span
+          className="flex size-7 items-center justify-center rounded-full border border-[#d0d0d0] bg-white text-xs font-medium text-[#141210]"
+          aria-hidden="true"
+        >
+          {letter}
+        </span>
+      )}
+      {label !== "" ? (
+        <span className="max-w-full truncate text-center text-[10px] leading-3 text-foreground">
+          {label}
+        </span>
+      ) : null}
+    </span>
+  );
+}
+
+function orderChoice(order: { orderNumber: string | null; placedAt: number }) {
+  const when = new Date(order.placedAt).toLocaleDateString("en-US", {
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+  });
+  const number =
+    order.orderNumber === null ? "Order" : `Order #${formatOrderNumber(order.orderNumber)}`;
+  return `${number}, ${when}`;
+}
+
+function ticketError(error: unknown) {
+  const message = error instanceof Error ? error.message : "Unable to send";
+  const uncaught = message.match(/Uncaught Error: (.*?)(?:\s+at\s+|$)/);
+  return uncaught?.[1] ?? message;
+}
+
+const ticketFieldClass =
+  "w-full border border-foreground/20 bg-background px-3 py-3 text-sm outline-none";

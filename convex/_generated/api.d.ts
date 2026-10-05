@@ -13,6 +13,7 @@ import type * as checkout from "../checkout.js";
 import type * as googleAccount from "../googleAccount.js";
 import type * as http from "../http.js";
 import type * as orders from "../orders.js";
+import type * as tickets from "../tickets.js";
 import type * as users from "../users.js";
 
 import type {
@@ -27,6 +28,7 @@ declare const fullApi: ApiFromModules<{
   googleAccount: typeof googleAccount;
   http: typeof http;
   orders: typeof orders;
+  tickets: typeof tickets;
   users: typeof users;
 }>;
 

@@ -441,7 +441,7 @@ async function requireUser(ctx: QueryCtx | MutationCtx) {
   return user;
 }
 
-async function profileImage(ctx: QueryCtx, user: Doc<"users">) {
+export async function profileImage(ctx: QueryCtx, user: Doc<"users">) {
   if (user.photoUrl !== undefined) {
     return user.photoUrl;
   }

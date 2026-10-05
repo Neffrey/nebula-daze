@@ -68,4 +68,17 @@ export default defineSchema({
     unitPrice: v.number(),
     trackingUrl: v.optional(v.string()),
   }).index("by_orderId", ["orderId"]),
+  tickets: defineTable({
+    userId: v.id("users"),
+    orderId: v.optional(v.id("orders")),
+    createdAt: v.number(),
+    messages: v.array(v.id("ticketMessages")),
+    status: v.optional(v.union(v.literal("active"), v.literal("archived"))),
+  }).index("by_userId", ["userId"]),
+  ticketMessages: defineTable({
+    ticketId: v.id("tickets"),
+    userId: v.id("users"),
+    message: v.string(),
+    createdAt: v.number(),
+  }).index("by_ticketId", ["ticketId"]),
 });
