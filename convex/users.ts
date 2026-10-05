@@ -228,7 +228,7 @@ export const saveAddress = mutation({
     country: v.string(),
     phone: v.string(),
   },
-  returns: v.null(),
+  returns: v.id("addresses"),
   handler: async (ctx, args) => {
     const user = await requireUser(ctx);
     const address = {
@@ -247,7 +247,7 @@ export const saveAddress = mutation({
         throw new Error("Address not found");
       }
       await ctx.db.patch("addresses", args.addressId, address);
-      return null;
+      return args.addressId;
     }
     const saved = await ctx.db
       .query("addresses")
@@ -257,12 +257,11 @@ export const saveAddress = mutation({
       throw new Error("Save up to 8 addresses");
     }
     const hasDefault = saved.some((item) => item.isDefault === true);
-    await ctx.db.insert("addresses", {
+    return await ctx.db.insert("addresses", {
       userId: user._id,
       ...address,
       isDefault: !hasDefault,
     });
-    return null;
   },
 });
 

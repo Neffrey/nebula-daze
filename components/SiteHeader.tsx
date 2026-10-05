@@ -32,7 +32,7 @@ export default function SiteHeader() {
             {categories.map((category) => (
               <a
                 key={category}
-                href={`#${category.toLowerCase()}`}
+                href={`/#${category.toLowerCase()}`}
                 className="text-[11px] tracking-[0.16em] uppercase"
               >
                 {category}
@@ -70,7 +70,7 @@ export default function SiteHeader() {
             {categories.map((category) => (
               <a
                 key={category}
-                href={`#${category.toLowerCase()}`}
+                href={`/#${category.toLowerCase()}`}
                 className="font-display text-4xl"
                 onClick={() => setMenuOpen(false)}
               >

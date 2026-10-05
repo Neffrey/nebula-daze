@@ -4,15 +4,17 @@ import { useMutation, useQuery } from "convex/react";
 import Link from "next/link";
 import { FormEvent, useState } from "react";
 import AddressAutocomplete from "@/components/AddressAutocomplete";
+import SavedAddresses from "@/components/SavedAddresses";
 import SiteHeader from "@/components/SiteHeader";
 import { useCart } from "@/components/CartProvider";
 import { api } from "@/convex/_generated/api";
+import type { Id } from "@/convex/_generated/dataModel";
 import { formatPrice } from "@/lib/catalog";
 import { countryName } from "@/lib/countries";
 
 export default function CheckoutPage() {
   const { lines, clear } = useCart();
-  const viewer = useQuery(api.users.viewer);
+  const profile = useQuery(api.users.profile);
   const placeOrder = useMutation(api.orders.place);
   const [error, setError] = useState<string | null>(null);
   const [placing, setPlacing] = useState(false);
@@ -24,8 +26,44 @@ export default function CheckoutPage() {
   const [postalCode, setPostalCode] = useState("");
   const [country, setCountry] = useState("");
   const [phone, setPhone] = useState("");
+  const [shippingAddressId, setShippingAddressId] = useState<Id<"addresses"> | null>(null);
 
   const subtotal = lines.reduce((sum, line) => sum + line.price * line.quantity, 0);
+  const defaultAddress =
+    profile === undefined || profile === null
+      ? null
+      : (profile.addresses.find((address) => address.isDefault) ?? null);
+  const shippingAddress =
+    profile === undefined || profile === null
+      ? null
+      : (profile.addresses.find((address) => address._id === shippingAddressId) ?? defaultAddress);
+
+  function placeSaved() {
+    if (shippingAddress === null) {
+      return;
+    }
+    setPlacing(true);
+    setError(null);
+    void placeOrder({
+      items: lines.map((line) => ({ name: line.name, quantity: line.quantity })),
+      shipName: shippingAddress.label,
+      addressLine: shippingAddress.addressLine,
+      addressLine2: shippingAddress.addressLine2,
+      city: shippingAddress.city,
+      region: shippingAddress.region,
+      postalCode: shippingAddress.postalCode,
+      country: shippingAddress.country,
+      phone: shippingAddress.phone,
+    })
+      .then((order) => {
+        clear();
+        setPlacedTotal(order.total);
+      })
+      .catch((placeError: unknown) => {
+        setError(placeError instanceof Error ? placeError.message : "Unable to place the order");
+        setPlacing(false);
+      });
+  }
 
   function place(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -62,16 +100,36 @@ export default function CheckoutPage() {
           <Placed total={placedTotal} />
         ) : lines.length === 0 ? (
           <EmptyBag />
-        ) : viewer === undefined ? (
+        ) : profile === undefined ? (
           <p className="mt-8 text-sm text-[#6f675e]">Loading</p>
-        ) : viewer === null ? (
+        ) : profile === null ? (
           <SignInPrompt />
         ) : (
           <div className="mt-8 grid gap-12 lg:grid-cols-[1.2fr_0.8fr]">
-            <form className="flex flex-col gap-4" onSubmit={place}>
+            <div className="flex flex-col gap-4">
               <h1 className="font-display text-5xl leading-none">Ship to</h1>
-              <p className="text-sm text-[#6f675e]">{viewer.email ?? "Signed in"}</p>
-              <Field label="Recipient name" name="shipName" autoComplete="name" defaultValue={viewer.name ?? ""} />
+              <p className="text-sm text-[#6f675e]">{profile.email ?? "Signed in"}</p>
+              {defaultAddress ? (
+                <>
+                  <SavedAddresses
+                    addresses={profile.addresses}
+                    checkout
+                    shippingAddressId={shippingAddress?._id ?? null}
+                    onShippingAddressChange={setShippingAddressId}
+                  />
+                  <button
+                    type="button"
+                    className="mt-2 bg-[#141210] py-3 text-[11px] tracking-[0.22em] text-[#f4f1eb] uppercase disabled:opacity-50"
+                    disabled={placing}
+                    onClick={placeSaved}
+                  >
+                    {placing ? "Please wait" : "Place order"}
+                  </button>
+                  {error && <p className="text-sm text-rose-800">{error}</p>}
+                </>
+              ) : (
+            <form className="flex flex-col gap-4" onSubmit={place}>
+              <Field label="Recipient name" name="shipName" autoComplete="name" defaultValue={profile.name ?? ""} />
               <label className="text-[11px] tracking-[0.16em] uppercase">
                 Address
                 <AddressAutocomplete
@@ -186,6 +244,8 @@ export default function CheckoutPage() {
               </button>
               {error && <p className="text-sm text-rose-800">{error}</p>}
             </form>
+              )}
+            </div>
             <Summary lines={lines} subtotal={subtotal} />
           </div>
         )}
