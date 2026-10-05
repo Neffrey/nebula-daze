@@ -34,7 +34,7 @@ export default function OrderDetailsPage({
           <p className="mt-8 text-sm text-[#6f675e]">Loading</p>
         ) : viewer === null ? (
           <SignedOut orderId={orderId} />
-        ) : order === null ? (
+        ) : order === null || order === undefined ? (
           <Missing />
         ) : (
           <Details order={order} />
