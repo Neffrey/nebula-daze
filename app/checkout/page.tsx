@@ -3,6 +3,7 @@
 import { useMutation, useQuery } from "convex/react";
 import Link from "next/link";
 import { FormEvent, useState } from "react";
+import AddressAutocomplete from "@/components/AddressAutocomplete";
 import SiteHeader from "@/components/SiteHeader";
 import { useCart } from "@/components/CartProvider";
 import { api } from "@/convex/_generated/api";
@@ -15,6 +16,9 @@ export default function CheckoutPage() {
   const [error, setError] = useState<string | null>(null);
   const [placing, setPlacing] = useState(false);
   const [placedTotal, setPlacedTotal] = useState<number | null>(null);
+  const [addressLine, setAddressLine] = useState("");
+  const [city, setCity] = useState("");
+  const [postalCode, setPostalCode] = useState("");
 
   const subtotal = lines.reduce((sum, line) => sum + line.price * line.quantity, 0);
 
@@ -26,9 +30,9 @@ export default function CheckoutPage() {
     void placeOrder({
       items: lines.map((line) => ({ name: line.name, quantity: line.quantity })),
       shipName: String(formData.get("shipName") ?? ""),
-      addressLine: String(formData.get("addressLine") ?? ""),
-      city: String(formData.get("city") ?? ""),
-      postalCode: String(formData.get("postalCode") ?? ""),
+      addressLine,
+      city,
+      postalCode,
     })
       .then((order) => {
         clear();
@@ -59,9 +63,52 @@ export default function CheckoutPage() {
               <h1 className="font-display text-5xl leading-none">Ship to</h1>
               <p className="text-sm text-[#6f675e]">{viewer.email ?? "Signed in"}</p>
               <Field label="Name" name="shipName" autoComplete="name" defaultValue={viewer.name ?? ""} />
-              <Field label="Address" name="addressLine" autoComplete="address-line1" />
-              <Field label="City" name="city" autoComplete="address-level2" />
-              <Field label="Postal code" name="postalCode" autoComplete="postal-code" />
+              <label className="text-[11px] tracking-[0.16em] uppercase">
+                Address
+                <AddressAutocomplete
+                  className="mt-2 w-full border border-[#141210]/20 bg-transparent px-3 py-3 text-sm tracking-normal normal-case outline-none"
+                  value={addressLine}
+                  required
+                  onChange={setAddressLine}
+                  onPlace={(place) => {
+                    if (place.addressLine) {
+                      setAddressLine(place.addressLine);
+                    }
+                    if (place.city) {
+                      setCity(place.city);
+                    }
+                    if (place.postalCode) {
+                      setPostalCode(place.postalCode);
+                    }
+                  }}
+                />
+              </label>
+              <label className="text-[11px] tracking-[0.16em] uppercase">
+                City
+                <input
+                  className="mt-2 w-full border border-[#141210]/20 bg-transparent px-3 py-3 text-sm tracking-normal normal-case outline-none"
+                  name="city"
+                  autoComplete="address-level2"
+                  required
+                  value={city}
+                  onChange={(event) => {
+                    setCity(event.target.value);
+                  }}
+                />
+              </label>
+              <label className="text-[11px] tracking-[0.16em] uppercase">
+                Postal code
+                <input
+                  className="mt-2 w-full border border-[#141210]/20 bg-transparent px-3 py-3 text-sm tracking-normal normal-case outline-none"
+                  name="postalCode"
+                  autoComplete="postal-code"
+                  required
+                  value={postalCode}
+                  onChange={(event) => {
+                    setPostalCode(event.target.value);
+                  }}
+                />
+              </label>
               <button
                 type="submit"
                 className="mt-2 bg-[#141210] py-3 text-[11px] tracking-[0.22em] text-[#f4f1eb] uppercase disabled:opacity-50"

@@ -7,6 +7,7 @@ import { ChangeEvent, FormEvent, useEffect, useRef, useState, type ReactNode } f
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { siteUrlForHostname } from "@/lib/siteUrl";
+import AddressAutocomplete from "@/components/AddressAutocomplete";
 import { uploadFiles } from "@/lib/uploadthing";
 
 export default function ProfileSecurity({ onSignOut }: { onSignOut: () => void }) {
@@ -382,20 +383,23 @@ function AddressForm({
   onCancel?: () => void;
 }) {
   const saveAddress = useMutation(api.users.saveAddress);
+  const [name, setName] = useState(address?.label ?? "");
+  const [addressLine, setAddressLine] = useState(address?.addressLine ?? "");
+  const [city, setCity] = useState(address?.city ?? "");
+  const [postalCode, setPostalCode] = useState(address?.postalCode ?? "");
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
   function save(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const form = new FormData(event.currentTarget);
     setSaving(true);
     setError(null);
     void saveAddress({
       addressId: address?._id,
-      label: String(form.get("label") ?? ""),
-      addressLine: String(form.get("addressLine") ?? ""),
-      city: String(form.get("city") ?? ""),
-      postalCode: String(form.get("postalCode") ?? ""),
+      label: name,
+      addressLine,
+      city,
+      postalCode,
     })
       .then(() => {
         onSaved?.();
@@ -415,28 +419,46 @@ function AddressForm({
         name="label"
         autoComplete="name"
         placeholder="Name"
-        defaultValue={address?.label ?? ""}
+        value={name}
+        onChange={(event) => {
+          setName(event.target.value);
+        }}
       />
-      <input
+      <AddressAutocomplete
         className={inputClass}
-        name="addressLine"
-        autoComplete="address-line1"
-        placeholder="Address"
-        defaultValue={address?.addressLine ?? ""}
+        value={addressLine}
+        onChange={setAddressLine}
+        onPlace={(place) => {
+          if (place.addressLine) {
+            setAddressLine(place.addressLine);
+          }
+          if (place.city) {
+            setCity(place.city);
+          }
+          if (place.postalCode) {
+            setPostalCode(place.postalCode);
+          }
+        }}
       />
       <input
         className={inputClass}
         name="city"
         autoComplete="address-level2"
         placeholder="City"
-        defaultValue={address?.city ?? ""}
+        value={city}
+        onChange={(event) => {
+          setCity(event.target.value);
+        }}
       />
       <input
         className={inputClass}
         name="postalCode"
         autoComplete="postal-code"
         placeholder="Postal code"
-        defaultValue={address?.postalCode ?? ""}
+        value={postalCode}
+        onChange={(event) => {
+          setPostalCode(event.target.value);
+        }}
       />
       <div className="flex items-center gap-4">
         <SaveButton saving={saving} />
