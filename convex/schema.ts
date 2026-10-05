@@ -53,7 +53,10 @@ export default defineSchema({
     placedAt: v.number(),
     paymentStatus: v.optional(v.union(v.literal("pending"), v.literal("paid"))),
     stripeCheckoutSessionId: v.optional(v.string()),
-  }).index("by_userId", ["userId"]),
+    orderNumber: v.optional(v.string()),
+  })
+    .index("by_userId", ["userId"])
+    .index("by_orderNumber", ["orderNumber"]),
   orderItems: defineTable({
     orderId: v.id("orders"),
     name: v.string(),

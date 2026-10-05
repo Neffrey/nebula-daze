@@ -4,6 +4,7 @@ import { useAction, useQuery } from "convex/react";
 import Link from "next/link";
 import { FormEvent, useEffect, useRef, useState } from "react";
 import AddressAutocomplete from "@/components/AddressAutocomplete";
+import OrderAddress from "@/components/OrderAddress";
 import SavedAddresses from "@/components/SavedAddresses";
 import SiteHeader from "@/components/SiteHeader";
 import { useCart, type CartLine } from "@/components/CartProvider";
@@ -145,7 +146,11 @@ export default function CheckoutPage() {
         {!ready || (returnOrderId !== null && payment === undefined) ? (
           <p className="mt-8 text-sm text-[#6f675e]">Loading</p>
         ) : payment?.paid ? (
-          <Placed total={payment.total} />
+          <Placed
+            total={payment.total}
+            orderNumber={payment.orderNumber}
+            shippingAddress={payment.shippingAddress}
+          />
         ) : returnOrderId !== null && payment !== undefined && payment !== null && !payment.paid ? (
           <Confirming />
         ) : returnOrderId !== null && payment === null ? (
@@ -488,13 +493,32 @@ function MissingPayment() {
   );
 }
 
-function Placed({ total }: { total: number }) {
+function Placed({
+  total,
+  orderNumber,
+  shippingAddress,
+}: {
+  total: number;
+  orderNumber: string | null;
+  shippingAddress: {
+    name: string;
+    addressLine: string;
+    addressLine2: string;
+    city: string;
+    region: string;
+    postalCode: string;
+    country: string;
+    phone: string;
+  };
+}) {
   return (
     <div className="mt-8">
       <h1 className="font-display text-5xl leading-none">Order placed</h1>
       <p className="mt-4 max-w-md text-sm leading-6 text-[#6f675e]">
-        Your card payment for {formatPrice(total)} is confirmed. The order is waiting on your account.
+        {orderNumber === null ? "Your order" : `Order #${orderNumber}`} for {formatPrice(total)} is confirmed. It is
+        waiting on your account.
       </p>
+      <OrderAddress address={shippingAddress} />
       <Link
         href="/account"
         className="mt-8 inline-block bg-[#141210] px-6 py-3 text-[11px] tracking-[0.22em] text-[#f4f1eb] uppercase"

@@ -1,5 +1,7 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
+import { nanoid } from "nanoid";
+import type { Doc } from "./_generated/dataModel";
 import type { MutationCtx } from "./_generated/server";
 import { internalMutation, query } from "./_generated/server";
 import { products } from "../lib/catalog";
@@ -29,13 +31,23 @@ const pricedLine = v.object({
   unitPrice: v.number(),
 });
 
-const listedOrder = v.object({
-  _id: v.id("orders"),
-  placedAt: v.number(),
-  total: v.number(),
+const shippingAddress = v.object({
+  name: v.string(),
+  addressLine: v.string(),
+  addressLine2: v.string(),
   city: v.string(),
   region: v.string(),
+  postalCode: v.string(),
   country: v.string(),
+  phone: v.string(),
+});
+
+const listedOrder = v.object({
+  _id: v.id("orders"),
+  orderNumber: v.union(v.string(), v.null()),
+  placedAt: v.number(),
+  total: v.number(),
+  shippingAddress,
   items: v.array(
     v.object({
       name: v.string(),
@@ -74,11 +86,10 @@ export const listMine = query({
         .take(20);
       listed.push({
         _id: order._id,
+        orderNumber: order.orderNumber ?? null,
         placedAt: order.placedAt,
         total: order.total,
-        city: order.city,
-        region: order.region ?? "",
-        country: order.country ?? "",
+        shippingAddress: shippingAddressOf(order),
         items: items.map((item) => ({
           name: item.name,
           quantity: item.quantity,
@@ -92,7 +103,15 @@ export const listMine = query({
 
 export const status = query({
   args: { orderId: v.id("orders") },
-  returns: v.union(v.object({ total: v.number(), paid: v.boolean() }), v.null()),
+  returns: v.union(
+    v.object({
+      total: v.number(),
+      paid: v.boolean(),
+      orderNumber: v.union(v.string(), v.null()),
+      shippingAddress,
+    }),
+    v.null(),
+  ),
   handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
     if (userId === null) {
@@ -107,6 +126,8 @@ export const status = query({
     return {
       total: order.total,
       paid: order.paymentStatus !== "pending",
+      orderNumber: order.orderNumber ?? null,
+      shippingAddress: shippingAddressOf(order),
     };
   },
 });
@@ -120,8 +141,10 @@ export const insertPending = internalMutation({
   }),
   handler: async (ctx, args) => {
     const built = await buildOrder(ctx, args);
+    const orderNumber = await assignOrderNumber(ctx);
     const orderId = await ctx.db.insert("orders", {
       userId: built.userId,
+      orderNumber,
       shipName: built.shipName,
       addressLine: built.addressLine,
       addressLine2: built.addressLine2,
@@ -288,6 +311,33 @@ async function buildOrder(ctx: MutationCtx, args: {
     total,
     lines,
   };
+}
+
+function shippingAddressOf(order: Doc<"orders">) {
+  return {
+    name: order.shipName,
+    addressLine: order.addressLine,
+    addressLine2: order.addressLine2 ?? "",
+    city: order.city,
+    region: order.region ?? "",
+    postalCode: order.postalCode,
+    country: order.country ?? "",
+    phone: order.phone ?? "",
+  };
+}
+
+async function assignOrderNumber(ctx: MutationCtx) {
+  for (let attempt = 0; attempt < 5; attempt += 1) {
+    const orderNumber = nanoid(8);
+    const existing = await ctx.db
+      .query("orders")
+      .withIndex("by_orderNumber", (q) => q.eq("orderNumber", orderNumber))
+      .unique();
+    if (existing === null) {
+      return orderNumber;
+    }
+  }
+  throw new Error("Could not assign an order number");
 }
 
 function requireText(value: string, label: string, maxLength: number) {
