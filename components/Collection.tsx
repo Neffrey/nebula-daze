@@ -31,7 +31,7 @@ export default function Collection() {
               className={`text-[11px] tracking-[0.18em] uppercase ${
                 active === category
                   ? "underline underline-offset-4"
-                  : "text-[#6f675e]"
+                  : "text-muted"
               }`}
               onClick={() => setActive(category)}
             >
@@ -44,7 +44,7 @@ export default function Collection() {
         {visible.map((product) => (
           <li key={product.name}>
             <article>
-              <div className="relative aspect-[3/4] overflow-hidden bg-[#e7e1d8]">
+              <div className="relative aspect-[3/4] overflow-hidden bg-surface">
                 <Image
                   src={product.image}
                   alt={product.name}
@@ -58,7 +58,7 @@ export default function Collection() {
                   <h3 className="font-display text-xl leading-tight">
                     {product.name}
                   </h3>
-                  <p className="mt-1 text-[11px] tracking-[0.16em] text-[#6f675e] uppercase">
+                  <p className="mt-1 text-[11px] tracking-[0.16em] text-muted uppercase">
                     {product.category}
                   </p>
                 </div>
@@ -66,7 +66,7 @@ export default function Collection() {
                   <p className="text-sm">{formatPrice(product.price)}</p>
                   <button
                     type="button"
-                    className="border border-[#141210]/20 px-3 py-2 text-[11px] tracking-[0.14em] uppercase"
+                    className="border border-foreground/20 px-3 py-2 text-[11px] tracking-[0.14em] uppercase"
                     onClick={() => add(product)}
                   >
                     Add to cart

@@ -47,7 +47,7 @@ export default function SignIn() {
         <label className="text-[11px] tracking-[0.16em] uppercase">
           Email
           <input
-            className="mt-2 w-full border border-[#141210]/20 bg-transparent px-3 py-3 text-sm outline-none"
+            className="mt-2 w-full border border-foreground/20 bg-transparent px-3 py-3 text-sm outline-none"
             type="email"
             name="email"
             required
@@ -56,7 +56,7 @@ export default function SignIn() {
         <label className="text-[11px] tracking-[0.16em] uppercase">
           Password
           <input
-            className="mt-2 w-full border border-[#141210]/20 bg-transparent px-3 py-3 text-sm outline-none"
+            className="mt-2 w-full border border-foreground/20 bg-transparent px-3 py-3 text-sm outline-none"
             type="password"
             name="password"
             minLength={8}
@@ -64,20 +64,20 @@ export default function SignIn() {
           />
         </label>
         <button
-          className="mt-2 bg-[#141210] py-3 text-[11px] tracking-[0.22em] text-[#f4f1eb] uppercase disabled:opacity-50"
+          className="mt-2 bg-foreground py-3 text-[11px] tracking-[0.22em] text-background uppercase disabled:opacity-50"
           type="submit"
           disabled={loading || googleLoading}
         >
           {loading ? "Please wait" : flow === "signIn" ? "Sign in" : "Sign up"}
         </button>
       </form>
-      <div className="mt-6 flex items-center gap-3 text-[#6f675e]">
-        <span className="h-px flex-1 bg-[#141210]/15" />
+      <div className="mt-6 flex items-center gap-3 text-muted">
+        <span className="h-px flex-1 bg-foreground/15" />
         <span className="text-[11px] tracking-[0.16em] uppercase">or</span>
-        <span className="h-px flex-1 bg-[#141210]/15" />
+        <span className="h-px flex-1 bg-foreground/15" />
       </div>
       <button
-        className="mt-6 flex items-center justify-center gap-3 border border-[#141210]/20 py-3 text-[11px] tracking-[0.22em] uppercase disabled:opacity-50"
+        className="mt-6 flex items-center justify-center gap-3 border border-foreground/20 py-3 text-[11px] tracking-[0.22em] uppercase disabled:opacity-50"
         type="button"
         disabled={loading || googleLoading}
         onClick={() => {
@@ -100,7 +100,7 @@ export default function SignIn() {
       </button>
       <button
         type="button"
-        className="mt-4 text-sm text-[#6f675e] underline underline-offset-4"
+        className="mt-4 text-sm text-muted underline underline-offset-4"
         onClick={() => setFlow(flow === "signIn" ? "signUp" : "signIn")}
       >
         {flow === "signIn"

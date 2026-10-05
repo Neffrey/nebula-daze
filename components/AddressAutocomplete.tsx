@@ -155,14 +155,14 @@ export default function AddressAutocomplete({
         }}
       />
       {open ? (
-        <ul id={listId} role="listbox" className="border border-t-0 border-[#141210]/20 bg-[#f4f1eb]">
+        <ul id={listId} role="listbox" className="border border-t-0 border-foreground/20 bg-background">
           {suggestions.map((suggestion, index) => (
             <li key={suggestion.placeId} role="presentation">
               <button
                 type="button"
                 role="option"
                 aria-selected={index === activeIndex}
-                className={`block w-full px-3 py-3 text-left text-sm ${index === activeIndex ? "bg-[#141210]/5" : ""}`}
+                className={`block w-full px-3 py-3 text-left text-sm ${index === activeIndex ? "bg-foreground/5" : ""}`}
                 onMouseDown={(event) => {
                   event.preventDefault();
                 }}
@@ -172,7 +172,7 @@ export default function AddressAutocomplete({
               >
                 <span>{suggestion.mainText}</span>
                 {suggestion.secondaryText ? (
-                  <span className="mt-1 block text-[#6f675e]">{suggestion.secondaryText}</span>
+                  <span className="mt-1 block text-muted">{suggestion.secondaryText}</span>
                 ) : null}
               </button>
             </li>

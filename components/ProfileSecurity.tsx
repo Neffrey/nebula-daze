@@ -7,13 +7,14 @@ import { ChangeEvent, FormEvent, useEffect, useRef, useState, type ReactNode } f
 import SavedAddresses from "@/components/SavedAddresses";
 import { api } from "@/convex/_generated/api";
 import { siteUrlForHostname } from "@/lib/siteUrl";
+import { applyTheme, writeStoredTheme } from "@/lib/theme";
 import { uploadFiles } from "@/lib/uploadthing";
 
 export default function ProfileSecurity({ onSignOut }: { onSignOut: () => void }) {
   const profile = useQuery(api.users.profile);
 
   if (profile === undefined) {
-    return <p className="mt-8 text-sm text-[#6f675e]">Loading</p>;
+    return <p className="mt-8 text-sm text-muted">Loading</p>;
   }
   if (profile === null) {
     return null;
@@ -33,7 +34,7 @@ export default function ProfileSecurity({ onSignOut }: { onSignOut: () => void }
         />
         <div className="min-w-0 flex-1 pb-1">
           <DisplayNameSetting value={profile.displayName ?? ""} />
-          {givenName ? <p className="mt-3 text-sm text-[#6f675e]">{givenName}</p> : null}
+          {givenName ? <p className="mt-3 text-sm text-muted">{givenName}</p> : null}
           <dl className="mt-5 flex flex-col gap-1 text-sm">
             {profile.email ? (
               <div>
@@ -58,11 +59,54 @@ export default function ProfileSecurity({ onSignOut }: { onSignOut: () => void }
       <GoogleLinkNotice googleLinked={googleLinked} />
       <button
         type="button"
-        className="mt-4 w-fit border border-[#141210]/20 px-6 py-3 text-[11px] tracking-[0.22em] uppercase"
+        className="mt-4 w-fit border border-foreground/20 px-6 py-3 text-[11px] tracking-[0.22em] uppercase"
         onClick={onSignOut}
       >
         Sign out
       </button>
+      <DarkModeSwitch theme={profile.theme} />
+    </div>
+  );
+}
+
+function DarkModeSwitch({ theme }: { theme: "light" | "dark" }) {
+  const saveTheme = useMutation(api.users.setTheme);
+  const [pending, setPending] = useState<"light" | "dark" | null>(null);
+  const selected = pending ?? theme;
+  const dark = selected === "dark";
+
+  useEffect(() => {
+    setPending(null);
+  }, [theme]);
+
+  function toggle() {
+    const next = dark ? "light" : "dark";
+    setPending(next);
+    applyTheme(next);
+    writeStoredTheme(next);
+    void saveTheme({ theme: next }).catch(() => {
+      setPending(null);
+      applyTheme(theme);
+      writeStoredTheme(theme);
+    });
+  }
+
+  return (
+    <div className="mt-10 flex items-center justify-between border-t border-foreground/10 pt-8">
+      <p className="text-sm">Light mode</p>
+      <button
+        type="button"
+        role="switch"
+        aria-checked={dark}
+        aria-label="Light mode or darkmode"
+        onClick={toggle}
+        className={`relative h-6 w-11 border border-foreground/30 ${dark ? "bg-foreground" : "bg-transparent"}`}
+      >
+        <span
+          className={`absolute top-0.5 size-4 ${dark ? "right-0.5 bg-background" : "left-0.5 bg-foreground"}`}
+        />
+      </button>
+      <p className="text-sm">Dark mode</p>
     </div>
   );
 }
@@ -114,14 +158,14 @@ function DisplayNameSetting({ value }: { value: string }) {
           });
       }}
     >
-      <p className="text-[11px] tracking-[0.22em] text-[#6f675e] uppercase">Display name</p>
+      <p className="text-[11px] tracking-[0.22em] text-muted uppercase">Display name</p>
       {editing ? (
         <h1 className="mt-3">
           <input
             ref={inputRef}
             id="profile-display-name"
             size={1}
-            className="font-display w-full min-w-0 max-w-full border-b border-[#141210]/30 bg-transparent text-5xl leading-none outline-none placeholder:text-[#141210]/25 sm:text-6xl"
+            className="font-display w-full min-w-0 max-w-full border-b border-foreground/30 bg-transparent text-5xl leading-none outline-none placeholder:text-foreground/25 sm:text-6xl"
             autoComplete="nickname"
             maxLength={40}
             placeholder="Your profile"
@@ -135,7 +179,7 @@ function DisplayNameSetting({ value }: { value: string }) {
       ) : (
         <div className="mt-3 flex min-w-0 items-end gap-4">
           <h1
-            className={`font-display min-w-0 text-5xl leading-none sm:text-6xl ${value ? "" : "text-[#141210]/25"}`}
+            className={`font-display min-w-0 text-5xl leading-none sm:text-6xl ${value ? "" : "text-foreground/25"}`}
           >
             {value || "Your profile"}
           </h1>
@@ -216,7 +260,7 @@ function ImageSetting({ image, initials }: { image: string | null; initials: str
         // eslint-disable-next-line @next/next/no-img-element
         <img src={image} alt="" className="size-36 object-cover" />
       ) : (
-        <div className="flex size-36 items-center justify-center bg-[#141210]/5 font-display text-4xl">
+        <div className="flex size-36 items-center justify-center bg-foreground/5 font-display text-4xl">
           {initials}
         </div>
       )}
@@ -233,7 +277,7 @@ function ImageSetting({ image, initials }: { image: string | null; initials: str
       {image ? (
         <button
           type="button"
-          className="mt-2 block text-[11px] tracking-[0.16em] text-[#6f675e] uppercase underline underline-offset-4"
+          className="mt-2 block text-[11px] tracking-[0.16em] text-muted uppercase underline underline-offset-4"
           onClick={() => {
             setError(null);
             void removeImage().catch((removeError: unknown) => {
@@ -318,7 +362,7 @@ function LinkedAccounts({
           {googleLinked ? null : (
             <button
               type="button"
-              className="mt-3 w-fit border border-[#141210]/20 px-6 py-3 text-[11px] tracking-[0.22em] uppercase disabled:opacity-50"
+              className="mt-3 w-fit border border-foreground/20 px-6 py-3 text-[11px] tracking-[0.22em] uppercase disabled:opacity-50"
               disabled={linking}
               onClick={() => {
                 setLinking(true);
@@ -395,7 +439,7 @@ function UnlinkButton({ label, onClick }: { label: string; onClick: () => void }
 
 function Setting({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <section className="border-t border-[#141210]/10 py-8 first:border-t-0 first:pt-0">
+    <section className="border-t border-foreground/10 py-8 first:border-t-0 first:pt-0">
       <h2 className="text-[11px] tracking-[0.16em] uppercase">{title}</h2>
       <div className="mt-4">{children}</div>
     </section>
@@ -414,7 +458,7 @@ function SaveButton({
   return (
     <button
       type="submit"
-      className={`${className} w-fit border border-[#141210]/20 px-6 py-3 text-[11px] tracking-[0.22em] uppercase disabled:opacity-50`}
+      className={`${className} w-fit border border-foreground/20 px-6 py-3 text-[11px] tracking-[0.22em] uppercase disabled:opacity-50`}
       disabled={saving}
     >
       {saving ? "Please wait" : label}
@@ -446,4 +490,4 @@ function errorMessage(error: unknown) {
 }
 
 const inputClass =
-  "w-full border border-[#141210]/20 bg-transparent px-3 py-3 text-sm outline-none";
+  "w-full border border-foreground/20 bg-transparent px-3 py-3 text-sm outline-none";

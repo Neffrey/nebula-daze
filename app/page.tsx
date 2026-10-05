@@ -12,7 +12,7 @@ export default function Home() {
     <>
       <SiteHeader />
       <main>
-        <section className="relative h-[88vh] min-h-[560px] bg-[#141210]">
+        <section className="relative h-[88vh] min-h-[560px] bg-ink">
           <Image
             src={heroImage}
             alt="Model in a white dress standing in tall grass"
@@ -21,20 +21,20 @@ export default function Home() {
             sizes="100vw"
             className="object-cover"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-[#141210]/70 via-transparent to-[#141210]/20" />
-          <div className="absolute bottom-0 left-0 max-w-xl p-6 text-[#f4f1eb] sm:p-12">
+          <div className="absolute inset-0 bg-gradient-to-t from-ink/70 via-transparent to-ink/20" />
+          <div className="absolute bottom-0 left-0 max-w-xl p-6 text-cream sm:p-12">
             <p className="text-[11px] tracking-[0.28em] uppercase">
               Autumn / Winter 26
             </p>
             <h1 className="font-display mt-3 text-5xl leading-[0.95] sm:text-7xl">
               Cut for the hour after dark
             </h1>
-            <p className="mt-4 max-w-sm text-sm leading-6 text-[#f4f1eb]/85">
+            <p className="mt-4 max-w-sm text-sm leading-6 text-cream/85">
               Tailoring, silk, and outerwear from the evening collection.
             </p>
             <a
               href="#new"
-              className="mt-8 inline-block border border-[#f4f1eb] px-6 py-3 text-[11px] tracking-[0.22em] uppercase"
+              className="mt-8 inline-block border border-cream px-6 py-3 text-[11px] tracking-[0.22em] uppercase"
             >
               Shop new arrivals
             </a>
@@ -44,7 +44,7 @@ export default function Home() {
         <Collection />
 
         <section className="grid lg:grid-cols-2">
-          <div className="relative min-h-[520px] bg-[#e7e1d8]">
+          <div className="relative min-h-[520px] bg-surface">
             <Image
               src={editorialImage}
               alt="Model in a yellow tailored jacket"
@@ -53,12 +53,12 @@ export default function Home() {
               className="object-cover"
             />
           </div>
-          <div className="flex flex-col justify-center bg-[#141210] px-6 py-16 text-[#f4f1eb] sm:px-16">
+          <div className="flex flex-col justify-center bg-ink px-6 py-16 text-cream sm:px-16">
             <p className="text-[11px] tracking-[0.22em] uppercase">The house</p>
             <h2 className="font-display mt-4 text-5xl leading-none">
               Cloth, not costume.
             </h2>
-            <p className="mt-6 max-w-md text-sm leading-7 text-[#f4f1eb]/80">
+            <p className="mt-6 max-w-md text-sm leading-7 text-cream/80">
               Narel is cut in small runs. Shoulders sit clean, hems fall long,
               and color stays close to stone, ink, and ivory. The clothes are
               made to be worn past midnight and again the next morning.
@@ -66,11 +66,11 @@ export default function Home() {
           </div>
         </section>
       </main>
-      <footer className="border-t border-[#141210]/10 px-4 py-14 sm:px-6">
+      <footer className="border-t border-foreground/10 px-4 py-14 sm:px-6">
         <div className="mx-auto grid max-w-7xl gap-10 sm:grid-cols-3">
           <div>
             <p className="font-display text-3xl tracking-[0.28em]">NAREL</p>
-            <p className="mt-3 max-w-xs text-sm leading-6 text-[#6f675e]">
+            <p className="mt-3 max-w-xs text-sm leading-6 text-muted">
               18 Mercer Street
               <br />
               New York

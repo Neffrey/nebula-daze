@@ -8,10 +8,16 @@ import { prepareGoogleLink as prepareGoogleLinkForUser } from "./googleAccount";
 import { requireCountryCode } from "../lib/countries";
 import { optionalLine, shippingPhone } from "../lib/shippingAddress";
 
+const themeValidator = v.union(v.literal("light"), v.literal("dark"));
+
+const roleValidator = v.union(v.literal("user"), v.literal("admin"), v.literal("banned"));
+
 const viewerValidator = v.object({
   name: v.union(v.string(), v.null()),
   email: v.union(v.string(), v.null()),
   image: v.union(v.string(), v.null()),
+  theme: themeValidator,
+  role: roleValidator,
 });
 
 const addressValidator = v.object({
@@ -33,6 +39,8 @@ const profileValidator = v.object({
   email: v.union(v.string(), v.null()),
   phone: v.union(v.string(), v.null()),
   image: v.union(v.string(), v.null()),
+  theme: themeValidator,
+  role: roleValidator,
   addresses: v.array(addressValidator),
   linkedAccounts: v.array(v.object({ provider: v.string() })),
 });
@@ -52,6 +60,8 @@ export const viewer = query({
       name: user.name ?? null,
       email: user.email ?? null,
       image: await profileImage(ctx, user),
+      theme: user.theme ?? "light",
+      role: user.role ?? "user",
     };
   },
 });
@@ -82,6 +92,8 @@ export const profile = query({
       email: user.email ?? null,
       phone: user.phone ?? null,
       image: await profileImage(ctx, user),
+      theme: user.theme ?? "light",
+      role: user.role ?? "user",
       addresses: addresses.map((address) => ({
         _id: address._id,
         label: address.label,
@@ -96,6 +108,16 @@ export const profile = query({
       })),
       linkedAccounts: accounts.map((account) => ({ provider: account.provider })),
     };
+  },
+});
+
+export const setTheme = mutation({
+  args: { theme: themeValidator },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const user = await requireUser(ctx);
+    await ctx.db.patch("users", user._id, { theme: args.theme });
+    return null;
   },
 });
 

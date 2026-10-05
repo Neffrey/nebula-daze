@@ -56,6 +56,7 @@ const listedOrder = v.object({
       name: v.string(),
       quantity: v.number(),
       unitPrice: v.number(),
+      trackingUrl: v.union(v.string(), v.null()),
     }),
   ),
 });
@@ -97,44 +98,11 @@ export const listMine = query({
           name: item.name,
           quantity: item.quantity,
           unitPrice: item.unitPrice,
+          trackingUrl: item.trackingUrl ?? null,
         })),
       });
     }
     return listed;
-  },
-});
-
-export const getMine = query({
-  args: { orderId: v.id("orders") },
-  returns: v.union(listedOrder, v.null()),
-  handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
-    if (userId === null) {
-      return null;
-    }
-
-    const order = await ctx.db.get("orders", args.orderId);
-    if (order === null || order.userId !== userId || order.paymentStatus === "pending") {
-      return null;
-    }
-
-    const items = await ctx.db
-      .query("orderItems")
-      .withIndex("by_orderId", (q) => q.eq("orderId", order._id))
-      .take(20);
-
-    return {
-      _id: order._id,
-      orderNumber: order.orderNumber ?? null,
-      placedAt: order.placedAt,
-      total: order.total,
-      shippingAddress: shippingAddressOf(order),
-      items: items.map((item) => ({
-        name: item.name,
-        quantity: item.quantity,
-        unitPrice: item.unitPrice,
-      })),
-    };
   },
 });
 

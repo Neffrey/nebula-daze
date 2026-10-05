@@ -16,6 +16,10 @@ const users = defineTable({
   displayName: v.optional(v.string()),
   imageId: v.optional(v.id("_storage")),
   photoUrl: v.optional(v.string()),
+  theme: v.optional(v.union(v.literal("light"), v.literal("dark"))),
+  role: v.optional(
+    v.union(v.literal("user"), v.literal("admin"), v.literal("banned")),
+  ),
 })
   .index("email", ["email"])
   .index("phone", ["phone"]);
@@ -62,5 +66,6 @@ export default defineSchema({
     name: v.string(),
     quantity: v.number(),
     unitPrice: v.number(),
+    trackingUrl: v.optional(v.string()),
   }).index("by_orderId", ["orderId"]),
 });

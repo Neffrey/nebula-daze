@@ -13,13 +13,7 @@ import { api } from "@/convex/_generated/api";
 import { formatPrice, products } from "@/lib/catalog";
 import { formatOrderNumber } from "@/lib/orderNumber";
 
-const sections = [
-  "Profile & Security",
-  "Orders",
-  "Payments",
-  "Preferences",
-  "Support",
-] as const;
+const sections = ["Profile & Security", "Orders", "Support"] as const;
 
 type Section = (typeof sections)[number];
 
@@ -34,7 +28,7 @@ export default function AccountPage() {
       <main className="mx-auto flex min-h-[70vh] w-full max-w-5xl flex-col px-6 py-16">
         <p className="text-[11px] tracking-[0.22em] uppercase">Account</p>
         {viewer === undefined ? (
-          <p className="mt-8 text-sm text-[#6f675e]">Loading</p>
+          <p className="mt-8 text-sm text-muted">Loading</p>
         ) : viewer === null ? (
           <SignedOut />
         ) : (
@@ -55,12 +49,12 @@ function SignedOut() {
   return (
     <div className="mt-8">
       <h1 className="font-display text-5xl leading-none">Sign in to Narel</h1>
-      <p className="mt-4 max-w-md text-sm leading-6 text-[#6f675e]">
+      <p className="mt-4 max-w-md text-sm leading-6 text-muted">
         Your orders and client details live here once you are signed in.
       </p>
       <Link
         href="/signin?next=/account"
-        className="mt-8 inline-block bg-[#141210] px-6 py-3 text-[11px] tracking-[0.22em] text-[#f4f1eb] uppercase"
+        className="mt-8 inline-block bg-foreground px-6 py-3 text-[11px] tracking-[0.22em] text-background uppercase"
       >
         Sign in
       </Link>
@@ -84,8 +78,8 @@ function SignedIn({ onSignOut }: { onSignOut: () => void }) {
                   aria-current={selected ? "page" : undefined}
                   className={`w-full border-l px-4 py-3 text-left text-[11px] tracking-[0.16em] uppercase ${
                     selected
-                      ? "border-[#141210]"
-                      : "border-transparent text-[#6f675e]"
+                      ? "border-foreground"
+                      : "border-transparent text-muted"
                   }`}
                   onClick={() => {
                     setSection(item);
@@ -105,8 +99,6 @@ function SignedIn({ onSignOut }: { onSignOut: () => void }) {
           <h1 className="font-display text-5xl leading-none">{section}</h1>
         )}
         {section === "Orders" ? <Orders /> : null}
-        {section === "Payments" ? <Payments /> : null}
-        {section === "Preferences" ? <Preferences /> : null}
         {section === "Support" ? <Support /> : null}
       </section>
     </div>
@@ -117,7 +109,7 @@ function Orders() {
   const orders = useQuery(api.orders.listMine);
 
   if (orders === undefined) {
-    return <p className="mt-8 text-sm text-[#6f675e]">Loading</p>;
+    return <p className="mt-8 text-sm text-muted">Loading</p>;
   }
 
   if (orders.length === 0) {
@@ -137,8 +129,8 @@ function Orders() {
   return (
     <ul className="mt-8 flex flex-col gap-6">
       {orders.map((order) => (
-        <li key={order._id} className="min-w-0 border border-[#141210]/15">
-          <div className="flex flex-wrap items-start gap-x-8 gap-y-4 bg-[#e7e1d8] px-4 py-4">
+        <li key={order._id} className="min-w-0 border border-foreground/15">
+          <div className="flex flex-wrap items-start gap-x-8 gap-y-4 bg-surface px-4 py-4">
             <OrderFact label="Order Placed">
               {new Date(order.placedAt).toLocaleDateString("en-US", {
                 month: "long",
@@ -148,32 +140,25 @@ function Orders() {
             </OrderFact>
             <OrderFact label="Total">{formatPrice(order.total)}</OrderFact>
             <ShipTo address={order.shippingAddress} />
-            <div className="sm:ml-auto">
-              <p className="text-sm">
-                {order.orderNumber === null ? "Order" : `Order #${formatOrderNumber(order.orderNumber)}`}
-              </p>
-              <Link
-                href={`/orders/${order._id}`}
-                className="mt-2 inline-block text-[11px] tracking-[0.16em] underline underline-offset-4"
-              >
-                View Order Details
-              </Link>
-            </div>
+            <p className="text-sm sm:ml-auto">
+              {order.orderNumber === null ? "Order" : `Order #${formatOrderNumber(order.orderNumber)}`}
+            </p>
           </div>
           <ul className="flex flex-col gap-4 px-4 py-4">
             {order.items.map((item) => {
               const image = products.find((product) => product.name === item.name)?.image;
               return (
                 <li key={item.name} className="flex items-center gap-4">
-                  <div className="relative h-24 w-18 shrink-0 overflow-hidden bg-[#e7e1d8]">
+                  <div className="relative h-24 w-18 shrink-0 overflow-hidden bg-surface">
                     {image ? (
                       <Image src={image} alt="" fill sizes="72px" className="object-cover" />
                     ) : null}
                   </div>
-                  <p className="font-display text-xl leading-tight">
+                  <p className="min-w-0 flex-1 font-display text-xl leading-tight">
                     {item.name}
-                    <span className="mt-1 block font-sans text-sm text-[#6f675e]">× {item.quantity}</span>
+                    <span className="mt-1 block font-sans text-sm text-muted">× {item.quantity}</span>
                   </p>
+                  <ItemActions trackingUrl={item.trackingUrl} />
                 </li>
               );
             })}
@@ -182,6 +167,47 @@ function Orders() {
       ))}
     </ul>
   );
+}
+
+function ItemActions({ trackingUrl }: { trackingUrl: string | null }) {
+  const href = trackingLink(trackingUrl);
+  const actionClass =
+    "border border-foreground/20 px-3 py-2 text-left text-sm disabled:cursor-not-allowed disabled:text-muted";
+
+  return (
+    <div className="ml-auto flex shrink-0 flex-col gap-2">
+      {href === null ? (
+        <button type="button" disabled className={actionClass}>
+          tracking unavailable
+        </button>
+      ) : (
+        <a href={href} target="_blank" rel="noopener noreferrer" className={actionClass}>
+          Track package
+        </a>
+      )}
+      <button type="button" disabled className={actionClass}>
+        Get product support
+      </button>
+      <button type="button" disabled className={actionClass}>
+        Write a product review
+      </button>
+    </div>
+  );
+}
+
+function trackingLink(url: string | null) {
+  if (url === null || url.trim().length === 0) {
+    return null;
+  }
+  try {
+    const parsed = new URL(url);
+    if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+      return null;
+    }
+    return parsed.toString();
+  } catch {
+    return null;
+  }
 }
 
 function ShipTo({ address }: { address: OrderShippingAddress }) {
@@ -226,20 +252,20 @@ function ShipTo({ address }: { address: OrderShippingAddress }) {
 
   return (
     <div className="relative" onMouseEnter={show} onMouseLeave={lingerThenFade}>
-      <p className="text-[11px] tracking-[0.16em] text-[#6f675e]">Ship to</p>
+      <p className="text-[11px] tracking-[0.16em] text-muted">Ship to</p>
       <p className="mt-1 text-sm" tabIndex={0} onFocus={show} onBlur={lingerThenFade}>
         {address.name}
       </p>
       <div
         role="tooltip"
-        className={`absolute top-full left-0 z-10 mt-2 w-max border border-[#141210]/15 bg-[#f4f1eb] px-3 py-2 pr-8 shadow-sm transition-opacity ${
+        className={`absolute top-full left-0 z-10 mt-2 w-max border border-foreground/15 bg-background px-3 py-2 pr-8 shadow-sm transition-opacity ${
           fade ? "duration-500" : "duration-0"
         } ${open ? "opacity-100" : "pointer-events-none opacity-0"}`}
       >
         <button
           type="button"
           aria-label="Close"
-          className="absolute top-2 right-2 text-[#141210]"
+          className="absolute top-2 right-2 text-foreground"
           onClick={closeNow}
         >
           <svg viewBox="0 0 16 16" className="size-3.5" aria-hidden="true">
@@ -255,33 +281,17 @@ function ShipTo({ address }: { address: OrderShippingAddress }) {
 function OrderFact({ label, children }: { label: string; children: string }) {
   return (
     <div>
-      <p className="text-[11px] tracking-[0.16em] text-[#6f675e]">{label}</p>
+      <p className="text-[11px] tracking-[0.16em] text-muted">{label}</p>
       <p className="mt-1 text-sm">{children}</p>
     </div>
   );
 }
 
-function Payments() {
-  return (
-    <p className="mt-8 max-w-md text-sm leading-6 text-[#6f675e]">
-      Cards are charged at checkout through Stripe. Narel does not keep a card on file.
-    </p>
-  );
-}
-
-function Preferences() {
-  return (
-    <p className="mt-8 max-w-md text-sm leading-6 text-[#6f675e]">
-      Nothing set yet. Correspondence goes to the email on your profile.
-    </p>
-  );
-}
-
 function Support() {
   return (
-    <p className="mt-8 max-w-md text-sm leading-6 text-[#6f675e]">
+    <p className="mt-8 max-w-md text-sm leading-6 text-muted">
       Write the house at{" "}
-      <a href="mailto:hello@example.com" className="text-[#141210] underline underline-offset-4">
+      <a href="mailto:hello@example.com" className="text-foreground underline underline-offset-4">
         hello@example.com
       </a>
       .

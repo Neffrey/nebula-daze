@@ -125,16 +125,20 @@ async function upsertDefaultUser(ctx: MutationCtx, args: CreateOrUpdateUserArgs)
 
   const userData = profileFields(profile, emailVerified, phoneVerified);
   if (userId !== null) {
+    const existing = await ctx.db.get("users", userId);
+    const defaultRole = existing?.role === undefined ? { role: "user" as const } : {};
     const password = await ctx.db
       .query("authAccounts")
       .withIndex("userIdAndProvider", (q) => q.eq("userId", userId).eq("provider", "password"))
       .take(1);
     if (password.length === 0) {
-      await ctx.db.patch("users", userId, userData);
+      await ctx.db.patch("users", userId, { ...userData, ...defaultRole });
+    } else if (existing?.role === undefined) {
+      await ctx.db.patch("users", userId, { role: "user" });
     }
     return userId;
   }
-  return await ctx.db.insert("users", userData);
+  return await ctx.db.insert("users", { ...userData, role: "user" });
 }
 
 function profileFields(

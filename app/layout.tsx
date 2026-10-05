@@ -4,6 +4,8 @@ import "./globals.css";
 import { ConvexAuthNextjsServerProvider } from "@convex-dev/auth/nextjs/server";
 import CartProvider from "@/components/CartProvider";
 import ConvexClientProvider from "@/components/ConvexClientProvider";
+import ThemeSync from "@/components/ThemeSync";
+import { themeBootScript } from "@/lib/theme";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -28,11 +30,15 @@ export default function RootLayout({
 }>) {
   return (
     <ConvexAuthNextjsServerProvider>
-      <html lang="en">
+      <html lang="en" suppressHydrationWarning>
+        <head>
+          <script dangerouslySetInnerHTML={{ __html: themeBootScript }} />
+        </head>
         <body
           className={`${geistSans.variable} ${display.variable} antialiased`}
         >
           <ConvexClientProvider>
+            <ThemeSync />
             <CartProvider>{children}</CartProvider>
           </ConvexClientProvider>
         </body>

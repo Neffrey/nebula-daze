@@ -49,7 +49,7 @@ export default function SavedAddresses({
           <AddressLines address={shownAddress} />
         </div>
       ) : (
-        <p className="text-sm text-[#6f675e]">No default address.</p>
+        <p className="text-sm text-muted">No default address.</p>
       )}
       <div className="mt-4 flex flex-wrap gap-3">
         {checkout ? null : (
@@ -99,7 +99,7 @@ function EditAddresses({
   return (
     <div className="mt-6 flex flex-col gap-8">
       {addresses.length === 0 ? (
-        <p className="text-sm text-[#6f675e]">No saved addresses.</p>
+        <p className="text-sm text-muted">No saved addresses.</p>
       ) : (
         addresses.map((address) =>
           editingId === address._id ? (
@@ -122,7 +122,7 @@ function EditAddresses({
         )
       )}
       {newAddress ? (
-        <div className="border-t border-[#141210]/10 pt-8">
+        <div className="border-t border-foreground/10 pt-8">
           <p className="text-[11px] tracking-[0.22em] uppercase">New address</p>
           <AddressForm onSaved={onNewAddressSaved} />
         </div>
@@ -384,12 +384,12 @@ function Popup({ title, onClose, children }: { title: string; onClose: () => voi
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <button type="button" aria-label="Close" className="absolute inset-0 bg-[#141210]/40" onClick={onClose} />
+      <button type="button" aria-label="Close" className="absolute inset-0 bg-foreground/40" onClick={onClose} />
       <div
         role="dialog"
         aria-modal="true"
         aria-labelledby="address-dialog-title"
-        className="relative max-h-[min(40rem,calc(100vh-2rem))] w-full max-w-lg overflow-y-auto bg-[#f4f1eb] p-6 sm:p-8"
+        className="relative max-h-[min(40rem,calc(100vh-2rem))] w-full max-w-lg overflow-y-auto bg-background p-6 sm:p-8"
       >
         <div className="flex items-center justify-between gap-4">
           <h2 id="address-dialog-title" className="text-[11px] tracking-[0.22em] uppercase">
@@ -429,7 +429,7 @@ function SaveButton({ saving }: { saving: boolean }) {
   return (
     <button
       type="submit"
-      className="w-fit border border-[#141210]/20 px-6 py-3 text-[11px] tracking-[0.22em] uppercase disabled:opacity-50"
+      className="w-fit border border-foreground/20 px-6 py-3 text-[11px] tracking-[0.22em] uppercase disabled:opacity-50"
       disabled={saving}
     >
       {saving ? "Please wait" : "Save"}
@@ -445,8 +445,8 @@ function errorMessage(error: unknown) {
   return error instanceof Error ? error.message : "Unable to save";
 }
 
-const inputClass = "w-full border border-[#141210]/20 bg-transparent px-3 py-3 text-sm outline-none";
+const inputClass = "w-full border border-foreground/20 bg-transparent px-3 py-3 text-sm outline-none";
 
-const outlineButtonClass = "border border-[#141210]/20 px-6 py-3 text-[11px] tracking-[0.22em] uppercase";
+const outlineButtonClass = "border border-foreground/20 px-6 py-3 text-[11px] tracking-[0.22em] uppercase";
 
 const textButtonClass = "text-[11px] tracking-[0.16em] uppercase underline underline-offset-4";

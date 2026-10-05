@@ -145,7 +145,7 @@ export default function CheckoutPage() {
       <main className="mx-auto flex min-h-[70vh] w-full max-w-3xl flex-col px-6 py-16">
         <p className="text-[11px] tracking-[0.22em] uppercase">Checkout</p>
         {!ready || (returnOrderId !== null && payment === undefined) ? (
-          <p className="mt-8 text-sm text-[#6f675e]">Loading</p>
+          <p className="mt-8 text-sm text-muted">Loading</p>
         ) : payment?.paid ? (
           <Placed
             total={payment.total}
@@ -159,14 +159,14 @@ export default function CheckoutPage() {
         ) : lines.length === 0 ? (
           <EmptyBag />
         ) : profile === undefined ? (
-          <p className="mt-8 text-sm text-[#6f675e]">Loading</p>
+          <p className="mt-8 text-sm text-muted">Loading</p>
         ) : profile === null ? (
           <SignInPrompt />
         ) : (
           <div className="mt-8 grid gap-12 lg:grid-cols-[1.2fr_0.8fr]">
             <div className="flex flex-col gap-4">
               <h1 className="font-display text-5xl leading-none">Ship to</h1>
-              <p className="text-sm text-[#6f675e]">{profile.email ?? "Signed in"}</p>
+              <p className="text-sm text-muted">{profile.email ?? "Signed in"}</p>
               {defaultAddress ? (
                 <>
                   <SavedAddresses
@@ -177,7 +177,7 @@ export default function CheckoutPage() {
                   />
                   <button
                     type="button"
-                    className="mt-2 bg-[#141210] py-3 text-[11px] tracking-[0.22em] text-[#f4f1eb] uppercase disabled:opacity-50"
+                    className="mt-2 bg-foreground py-3 text-[11px] tracking-[0.22em] text-background uppercase disabled:opacity-50"
                     disabled={placing}
                     onClick={placeSaved}
                   >
@@ -191,7 +191,7 @@ export default function CheckoutPage() {
               <label className="text-[11px] tracking-[0.16em] uppercase">
                 Address
                 <AddressAutocomplete
-                  className="mt-2 w-full border border-[#141210]/20 bg-transparent px-3 py-3 text-sm tracking-normal normal-case outline-none"
+                  className="mt-2 w-full border border-foreground/20 bg-transparent px-3 py-3 text-sm tracking-normal normal-case outline-none"
                   value={addressLine}
                   required
                   onChange={setAddressLine}
@@ -220,7 +220,7 @@ export default function CheckoutPage() {
               <label className="text-[11px] tracking-[0.16em] uppercase">
                 Apartment, suite, or unit
                 <input
-                  className="mt-2 w-full border border-[#141210]/20 bg-transparent px-3 py-3 text-sm tracking-normal normal-case outline-none"
+                  className="mt-2 w-full border border-foreground/20 bg-transparent px-3 py-3 text-sm tracking-normal normal-case outline-none"
                   name="addressLine2"
                   autoComplete="address-line2"
                   value={addressLine2}
@@ -232,7 +232,7 @@ export default function CheckoutPage() {
               <label className="text-[11px] tracking-[0.16em] uppercase">
                 City
                 <input
-                  className="mt-2 w-full border border-[#141210]/20 bg-transparent px-3 py-3 text-sm tracking-normal normal-case outline-none"
+                  className="mt-2 w-full border border-foreground/20 bg-transparent px-3 py-3 text-sm tracking-normal normal-case outline-none"
                   name="city"
                   autoComplete="address-level2"
                   required
@@ -245,7 +245,7 @@ export default function CheckoutPage() {
               <label className="text-[11px] tracking-[0.16em] uppercase">
                 State / Province
                 <input
-                  className="mt-2 w-full border border-[#141210]/20 bg-transparent px-3 py-3 text-sm tracking-normal normal-case outline-none"
+                  className="mt-2 w-full border border-foreground/20 bg-transparent px-3 py-3 text-sm tracking-normal normal-case outline-none"
                   name="region"
                   autoComplete="address-level1"
                   required
@@ -258,7 +258,7 @@ export default function CheckoutPage() {
               <label className="text-[11px] tracking-[0.16em] uppercase">
                 Postal code
                 <input
-                  className="mt-2 w-full border border-[#141210]/20 bg-transparent px-3 py-3 text-sm tracking-normal normal-case outline-none"
+                  className="mt-2 w-full border border-foreground/20 bg-transparent px-3 py-3 text-sm tracking-normal normal-case outline-none"
                   name="postalCode"
                   autoComplete="postal-code"
                   required
@@ -271,7 +271,7 @@ export default function CheckoutPage() {
               <label className="text-[11px] tracking-[0.16em] uppercase">
                 Country
                 <input
-                  className="mt-2 w-full border border-[#141210]/20 bg-transparent px-3 py-3 text-sm tracking-normal normal-case outline-none"
+                  className="mt-2 w-full border border-foreground/20 bg-transparent px-3 py-3 text-sm tracking-normal normal-case outline-none"
                   name="country"
                   autoComplete="country-name"
                   required
@@ -284,7 +284,7 @@ export default function CheckoutPage() {
               <label className="text-[11px] tracking-[0.16em] uppercase">
                 Phone
                 <input
-                  className="mt-2 w-full border border-[#141210]/20 bg-transparent px-3 py-3 text-sm tracking-normal normal-case outline-none"
+                  className="mt-2 w-full border border-foreground/20 bg-transparent px-3 py-3 text-sm tracking-normal normal-case outline-none"
                   name="phone"
                   autoComplete="tel"
                   value={phone}
@@ -295,7 +295,7 @@ export default function CheckoutPage() {
               </label>
               <button
                 type="submit"
-                className="mt-2 bg-[#141210] py-3 text-[11px] tracking-[0.22em] text-[#f4f1eb] uppercase disabled:opacity-50"
+                className="mt-2 bg-foreground py-3 text-[11px] tracking-[0.22em] text-background uppercase disabled:opacity-50"
                 disabled={placing}
               >
                 {placing ? "Please wait" : "Pay with card"}
@@ -327,7 +327,7 @@ function Field({
     <label className="text-[11px] tracking-[0.16em] uppercase">
       {label}
       <input
-        className="mt-2 w-full border border-[#141210]/20 bg-transparent px-3 py-3 text-sm tracking-normal normal-case outline-none"
+        className="mt-2 w-full border border-foreground/20 bg-transparent px-3 py-3 text-sm tracking-normal normal-case outline-none"
         name={name}
         autoComplete={autoComplete}
         defaultValue={defaultValue}
@@ -352,17 +352,17 @@ function Summary({
           <li key={line.name} className="flex justify-between gap-4 text-sm">
             <span>
               {line.name}
-              <span className="text-[#6f675e]"> × {line.quantity}</span>
+              <span className="text-muted"> × {line.quantity}</span>
             </span>
             <span>{formatPrice(line.price * line.quantity)}</span>
           </li>
         ))}
       </ul>
-      <p className="mt-6 flex justify-between border-t border-[#141210]/10 pt-4 text-sm">
+      <p className="mt-6 flex justify-between border-t border-foreground/10 pt-4 text-sm">
         <span>Total</span>
         <span>{formatPrice(subtotal)}</span>
       </p>
-      <p className="mt-3 text-sm text-[#6f675e]">
+      <p className="mt-3 text-sm text-muted">
         Complimentary shipping on orders over $200. Your card is entered on Stripe, and the order is placed after the payment is confirmed.
       </p>
     </aside>
@@ -453,12 +453,12 @@ function SignInPrompt() {
   return (
     <div className="mt-8">
       <h1 className="font-display text-5xl leading-none">Sign in to check out</h1>
-      <p className="mt-4 max-w-md text-sm leading-6 text-[#6f675e]">
+      <p className="mt-4 max-w-md text-sm leading-6 text-muted">
         Orders are kept on your account.
       </p>
       <Link
         href="/signin?next=/checkout"
-        className="mt-8 inline-block bg-[#141210] px-6 py-3 text-[11px] tracking-[0.22em] text-[#f4f1eb] uppercase"
+        className="mt-8 inline-block bg-foreground px-6 py-3 text-[11px] tracking-[0.22em] text-background uppercase"
       >
         Sign in
       </Link>
@@ -470,7 +470,7 @@ function Confirming() {
   return (
     <div className="mt-8">
       <h1 className="font-display text-5xl leading-none">Confirming payment</h1>
-      <p className="mt-4 max-w-md text-sm leading-6 text-[#6f675e]">
+      <p className="mt-4 max-w-md text-sm leading-6 text-muted">
         Stripe accepted the return from checkout. This page updates when the payment is confirmed.
       </p>
     </div>
@@ -481,7 +481,7 @@ function MissingPayment() {
   return (
     <div className="mt-8">
       <h1 className="font-display text-5xl leading-none">Payment not found</h1>
-      <p className="mt-4 max-w-md text-sm leading-6 text-[#6f675e]">
+      <p className="mt-4 max-w-md text-sm leading-6 text-muted">
         That payment is not on this account.
       </p>
       <Link
@@ -515,14 +515,14 @@ function Placed({
   return (
     <div className="mt-8">
       <h1 className="font-display text-5xl leading-none">Order placed</h1>
-      <p className="mt-4 max-w-md text-sm leading-6 text-[#6f675e]">
+      <p className="mt-4 max-w-md text-sm leading-6 text-muted">
         {orderNumber === null ? "Your order" : `Order #${formatOrderNumber(orderNumber)}`} for {formatPrice(total)} is confirmed. It is
         waiting on your account.
       </p>
       <OrderAddress address={shippingAddress} />
       <Link
         href="/account"
-        className="mt-8 inline-block bg-[#141210] px-6 py-3 text-[11px] tracking-[0.22em] text-[#f4f1eb] uppercase"
+        className="mt-8 inline-block bg-foreground px-6 py-3 text-[11px] tracking-[0.22em] text-background uppercase"
       >
         View account
       </Link>
