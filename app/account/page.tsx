@@ -11,6 +11,7 @@ import ProfileSecurity from "@/components/ProfileSecurity";
 import SiteHeader from "@/components/SiteHeader";
 import { api } from "@/convex/_generated/api";
 import { formatPrice, products } from "@/lib/catalog";
+import { formatOrderNumber } from "@/lib/orderNumber";
 
 const sections = [
   "Profile & Security",
@@ -147,9 +148,17 @@ function Orders() {
             </OrderFact>
             <OrderFact label="Total">{formatPrice(order.total)}</OrderFact>
             <ShipTo address={order.shippingAddress} />
-            <p className="text-sm sm:ml-auto">
-              {order.orderNumber === null ? "Order" : `Order #${order.orderNumber}`}
-            </p>
+            <div className="sm:ml-auto">
+              <p className="text-sm">
+                {order.orderNumber === null ? "Order" : `Order #${formatOrderNumber(order.orderNumber)}`}
+              </p>
+              <Link
+                href={`/orders/${order._id}`}
+                className="mt-2 inline-block text-[11px] tracking-[0.16em] underline underline-offset-4"
+              >
+                View Order Details
+              </Link>
+            </div>
           </div>
           <ul className="flex flex-col gap-4 px-4 py-4">
             {order.items.map((item) => {

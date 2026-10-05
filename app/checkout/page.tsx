@@ -11,6 +11,7 @@ import { useCart, type CartLine } from "@/components/CartProvider";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { formatPrice, products } from "@/lib/catalog";
+import { formatOrderNumber } from "@/lib/orderNumber";
 import { countryName } from "@/lib/countries";
 
 const CHECKOUT_BAG_KEY = "narel-checkout-bag";
@@ -515,7 +516,7 @@ function Placed({
     <div className="mt-8">
       <h1 className="font-display text-5xl leading-none">Order placed</h1>
       <p className="mt-4 max-w-md text-sm leading-6 text-[#6f675e]">
-        {orderNumber === null ? "Your order" : `Order #${orderNumber}`} for {formatPrice(total)} is confirmed. It is
+        {orderNumber === null ? "Your order" : `Order #${formatOrderNumber(orderNumber)}`} for {formatPrice(total)} is confirmed. It is
         waiting on your account.
       </p>
       <OrderAddress address={shippingAddress} />

@@ -1,12 +1,15 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
-import { nanoid } from "nanoid";
+import { customAlphabet } from "nanoid";
 import type { Doc } from "./_generated/dataModel";
 import type { MutationCtx } from "./_generated/server";
 import { internalMutation, query } from "./_generated/server";
 import { products } from "../lib/catalog";
 import { requireCountryCode } from "../lib/countries";
+import { ORDER_NUMBER_ALPHABET, ORDER_NUMBER_LENGTH } from "../lib/orderNumber";
 import { optionalLine, shippingPhone } from "../lib/shippingAddress";
+
+const createOrderNumber = customAlphabet(ORDER_NUMBER_ALPHABET, ORDER_NUMBER_LENGTH);
 
 const itemArgs = v.object({
   name: v.string(),
@@ -98,6 +101,40 @@ export const listMine = query({
       });
     }
     return listed;
+  },
+});
+
+export const getMine = query({
+  args: { orderId: v.id("orders") },
+  returns: v.union(listedOrder, v.null()),
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (userId === null) {
+      return null;
+    }
+
+    const order = await ctx.db.get("orders", args.orderId);
+    if (order === null || order.userId !== userId || order.paymentStatus === "pending") {
+      return null;
+    }
+
+    const items = await ctx.db
+      .query("orderItems")
+      .withIndex("by_orderId", (q) => q.eq("orderId", order._id))
+      .take(20);
+
+    return {
+      _id: order._id,
+      orderNumber: order.orderNumber ?? null,
+      placedAt: order.placedAt,
+      total: order.total,
+      shippingAddress: shippingAddressOf(order),
+      items: items.map((item) => ({
+        name: item.name,
+        quantity: item.quantity,
+        unitPrice: item.unitPrice,
+      })),
+    };
   },
 });
 
@@ -328,7 +365,7 @@ function shippingAddressOf(order: Doc<"orders">) {
 
 async function assignOrderNumber(ctx: MutationCtx) {
   for (let attempt = 0; attempt < 5; attempt += 1) {
-    const orderNumber = nanoid(8);
+    const orderNumber = createOrderNumber();
     const existing = await ctx.db
       .query("orders")
       .withIndex("by_orderNumber", (q) => q.eq("orderNumber", orderNumber))
