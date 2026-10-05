@@ -18,7 +18,12 @@ const users = defineTable({
   photoUrl: v.optional(v.string()),
   theme: v.optional(v.union(v.literal("light"), v.literal("dark"))),
   role: v.optional(
-    v.union(v.literal("user"), v.literal("admin"), v.literal("banned")),
+    v.union(
+      v.literal("user"),
+      v.literal("support"),
+      v.literal("admin"),
+      v.literal("banned"),
+    ),
   ),
 })
   .index("email", ["email"])
@@ -74,11 +79,20 @@ export default defineSchema({
     createdAt: v.number(),
     messages: v.array(v.id("ticketMessages")),
     status: v.optional(v.union(v.literal("active"), v.literal("archived"))),
-  }).index("by_userId", ["userId"]),
+  })
+    .index("by_userId", ["userId"])
+    .index("by_status", ["status"]),
   ticketMessages: defineTable({
     ticketId: v.id("tickets"),
     userId: v.id("users"),
     message: v.string(),
+    imageUrl: v.optional(v.string()),
+    createdAt: v.number(),
+  }).index("by_ticketId", ["ticketId"]),
+  ticketNotes: defineTable({
+    ticketId: v.id("tickets"),
+    userId: v.id("users"),
+    note: v.string(),
     createdAt: v.number(),
   }).index("by_ticketId", ["ticketId"]),
 });

@@ -5,7 +5,7 @@ import { useMutation, useQuery } from "convex/react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useEffect, useRef, useState } from "react";
+import { ChangeEvent, Suspense, useEffect, useRef, useState } from "react";
 import OrderAddress, { type OrderShippingAddress } from "@/components/OrderAddress";
 import ProfileSecurity from "@/components/ProfileSecurity";
 import SiteHeader from "@/components/SiteHeader";
@@ -13,6 +13,8 @@ import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { formatPrice, products } from "@/lib/catalog";
 import { formatOrderNumber } from "@/lib/orderNumber";
+import { hasAbility, type AccountRole } from "@/lib/roles";
+import { uploadFiles } from "@/lib/uploadthing";
 
 const sectionByQuery = {
   profile: "Profile & Security",
@@ -23,7 +25,6 @@ const sectionByQuery = {
 
 type SectionQuery = keyof typeof sectionByQuery;
 type Section = (typeof sectionByQuery)[SectionQuery];
-type AccountRole = "user" | "admin" | "banned";
 
 const sections: readonly Section[] = ["Profile & Security", "Orders", "Support"];
 
@@ -44,7 +45,7 @@ function visibleSection(value: string | null, role: AccountRole): SectionQuery {
   if (value === "orders" || value === "support" || value === "profile") {
     return value;
   }
-  if (value === "tickets" && role === "admin") {
+  if (value === "tickets" && hasAbility(role, "support")) {
     return "tickets";
   }
   return "profile";
@@ -110,7 +111,9 @@ function SignedIn({
   const requested = searchParams.get("section");
   const query = visibleSection(requested, role);
   const section = sectionByQuery[query];
-  const items: readonly Section[] = role === "admin" ? [...sections, "Tickets"] : sections;
+  const items: readonly Section[] = hasAbility(role, "support")
+    ? [...sections, "Tickets"]
+    : sections;
 
   useEffect(() => {
     if (requested === query) {
@@ -154,6 +157,7 @@ function SignedIn({
         )}
         {section === "Orders" ? <Orders /> : null}
         {section === "Support" ? <Support /> : null}
+        {section === "Tickets" ? <TicketQueue /> : null}
       </section>
     </div>
   );
@@ -347,34 +351,107 @@ type SupportView = (typeof supportViews)[number];
 
 function Support() {
   const [view, setView] = useState<SupportView>("New ticket");
+  const [query, setQuery] = useState("");
 
   return (
     <div className="mt-8">
-      <nav aria-label="Support">
-        <ul className="flex flex-wrap gap-x-6 border-b border-foreground/10">
-          {supportViews.map((item) => {
-            const selected = item === view;
-            return (
-              <li key={item}>
-                <button
-                  type="button"
-                  aria-current={selected ? "page" : undefined}
-                  className={`border-b py-3 text-sm ${
-                    selected ? "border-foreground" : "border-transparent text-muted"
-                  }`}
-                  onClick={() => {
-                    setView(item);
-                  }}
-                >
-                  {item}
-                </button>
-              </li>
-            );
-          })}
-        </ul>
-      </nav>
-      {view === "New ticket" ? <NewTicket /> : <TicketList archived={view === "archived tickets"} />}
+      <TicketSearch id="support-ticket-search" value={query} onChange={setQuery} />
+      <SectionTabs label="Support" items={supportViews} view={view} onView={setView} />
+      {view === "New ticket" ? (
+        <NewTicket />
+      ) : (
+        <TicketList archived={view === "archived tickets"} query={query} />
+      )}
     </div>
+  );
+}
+
+const ticketViews = ["active tickets", "archived tickets"] as const;
+
+type TicketView = (typeof ticketViews)[number];
+
+function TicketQueue() {
+  const [view, setView] = useState<TicketView>("active tickets");
+  const [query, setQuery] = useState("");
+
+  return (
+    <div className="mt-8">
+      <TicketSearch id="tickets-search" value={query} onChange={setQuery} />
+      <SectionTabs label="Tickets" items={ticketViews} view={view} onView={setView} />
+      <TicketList archived={view === "archived tickets"} everyone query={query} />
+    </div>
+  );
+}
+
+function TicketSearch({
+  id,
+  value,
+  onChange,
+}: {
+  id: string;
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <div className="relative mb-6">
+      <input
+        id={id}
+        type="search"
+        value={value}
+        aria-label="Search tickets"
+        placeholder="Search"
+        className={`${ticketFieldClass} pr-10 [&::-webkit-search-cancel-button]:appearance-none [&::-webkit-search-decoration]:appearance-none`}
+        onChange={(event) => {
+          onChange(event.target.value);
+        }}
+      />
+      <svg
+        viewBox="0 0 16 16"
+        className="pointer-events-none absolute top-1/2 right-3 size-4 -translate-y-1/2 text-muted"
+        aria-hidden="true"
+      >
+        <circle cx="7" cy="7" r="4.25" fill="none" stroke="currentColor" strokeWidth="1.4" />
+        <path d="M10.2 10.2L13.5 13.5" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+      </svg>
+    </div>
+  );
+}
+
+function SectionTabs<T extends string>({
+  label,
+  items,
+  view,
+  onView,
+}: {
+  label: string;
+  items: readonly T[];
+  view: T;
+  onView: (item: T) => void;
+}) {
+  return (
+    <nav aria-label={label}>
+      <ul className="flex flex-wrap gap-x-6 border-b border-foreground/10">
+        {items.map((item) => {
+          const selected = item === view;
+          return (
+            <li key={item}>
+              <button
+                type="button"
+                aria-current={selected ? "page" : undefined}
+                className={`border-b py-3 text-sm ${
+                  selected ? "border-foreground" : "border-transparent text-muted"
+                }`}
+                onClick={() => {
+                  onView(item);
+                }}
+              >
+                {item}
+              </button>
+            </li>
+          );
+        })}
+      </ul>
+    </nav>
   );
 }
 
@@ -472,17 +549,33 @@ function NewTicket() {
   );
 }
 
-function TicketList({ archived }: { archived: boolean }) {
-  const tickets = useQuery(api.tickets.listMine);
+function TicketList({
+  archived,
+  everyone = false,
+  query,
+}: {
+  archived: boolean;
+  everyone?: boolean;
+  query: string;
+}) {
+  const status = archived ? "archived" : "active";
+  const mine = useQuery(api.tickets.listMine, everyone ? "skip" : {});
+  const queue = useQuery(api.tickets.listAll, everyone ? { status } : "skip");
+  const tickets = everyone ? queue : mine;
   if (tickets === undefined) {
     return <p className="mt-8 text-sm text-muted">Loading</p>;
   }
 
-  const shown = tickets.filter((ticket) => ticket.status === (archived ? "archived" : "active"));
+  const inView = everyone ? tickets : tickets.filter((ticket) => ticket.status === status);
+  const shown = inView.filter((ticket) => ticketMatches(ticket, query));
   if (shown.length === 0) {
     return (
       <p className="mt-8 text-sm text-muted">
-        {archived ? "No archived tickets." : "No active tickets."}
+        {query.trim().length > 0
+          ? "No matching tickets."
+          : archived
+            ? "No archived tickets."
+            : "No active tickets."}
       </p>
     );
   }
@@ -490,7 +583,7 @@ function TicketList({ archived }: { archived: boolean }) {
   return (
     <ul className="mt-2">
       {shown.map((ticket) => (
-        <TicketRow key={ticket._id} ticket={ticket} />
+        <TicketRow key={ticket._id} ticket={ticket} showCreator={everyone} />
       ))}
     </ul>
   );
@@ -498,13 +591,17 @@ function TicketList({ archived }: { archived: boolean }) {
 
 function TicketRow({
   ticket,
+  showCreator,
 }: {
   ticket: {
     _id: Id<"tickets">;
     createdAt: number;
     orderNumber: string | null;
     preview: string;
+    creatorName: string | null;
+    creatorImage: string | null;
   };
+  showCreator: boolean;
 }) {
   const [open, setOpen] = useState(false);
 
@@ -513,30 +610,38 @@ function TicketRow({
       <button
         type="button"
         aria-expanded={open}
-        className="w-full py-4 text-left"
+        className="flex w-full items-center gap-4 py-4 text-left"
         onClick={() => {
           setOpen((current) => !current);
         }}
       >
-        <p className="text-sm">
-          {new Date(ticket.createdAt).toLocaleDateString("en-US", {
-            month: "long",
-            day: "numeric",
-            year: "numeric",
-          })}
-        </p>
-        {ticket.orderNumber === null ? null : (
-          <p className="mt-1 text-sm">Order #{formatOrderNumber(ticket.orderNumber)}</p>
-        )}
-        <p className="mt-2 text-sm text-muted">{ticket.preview}</p>
+        <span className="min-w-0 flex-1">
+          <p className="flex flex-wrap items-baseline gap-x-4 text-sm">
+            <span>
+              {new Date(ticket.createdAt).toLocaleDateString("en-US", {
+                month: "long",
+                day: "numeric",
+                year: "numeric",
+              })}
+            </span>
+            {ticket.orderNumber === null ? null : (
+              <span>Order #{formatOrderNumber(ticket.orderNumber)}</span>
+            )}
+          </p>
+          <p className="mt-2 text-sm text-muted">{ticket.preview}</p>
+        </span>
+        {showCreator ? (
+          <ChatAvatar image={ticket.creatorImage} name={ticket.creatorName} />
+        ) : null}
       </button>
-      {open ? <TicketLog ticketId={ticket._id} /> : null}
+      {open ? <TicketLog ticketId={ticket._id} notes={showCreator} /> : null}
     </li>
   );
 }
 
-function TicketLog({ ticketId }: { ticketId: Id<"tickets"> }) {
+function TicketLog({ ticketId, notes }: { ticketId: Id<"tickets">; notes: boolean }) {
   const messages = useQuery(api.tickets.messages, { ticketId });
+  const [preview, setPreview] = useState<string | null>(null);
   if (messages === undefined) {
     return <p className="pb-4 text-sm text-muted">Loading</p>;
   }
@@ -545,28 +650,329 @@ function TicketLog({ ticketId }: { ticketId: Id<"tickets"> }) {
   }
 
   return (
-    <ol className="mb-4 flex max-h-80 flex-col gap-3 overflow-y-auto bg-background px-3 py-4">
-      {messages.map((entry) => {
-        const support = entry.from === "support";
-        return (
-          <li
-            key={entry._id}
-            className={`flex items-end gap-2 ${support ? "justify-start" : "justify-end"}`}
-          >
-            {support ? <ChatAvatar image={entry.image} name={entry.name} /> : null}
-            <p
-              className={`max-w-[75%] rounded-md px-3 py-2 text-sm leading-5 text-[#141210] ${
-                support ? "bg-[#7ec8f0]" : "bg-[#ececec]"
-              }`}
+    <div className="mb-4">
+      <ol className="flex max-h-80 flex-col gap-3 overflow-y-auto bg-background px-3 py-4">
+        {messages.map((entry) => {
+          const support = entry.from === "support";
+          return (
+            <li
+              key={entry._id}
+              className={`flex items-end gap-2 ${support ? "justify-start" : "justify-end"}`}
             >
-              <span className="sr-only">{support ? "Support" : "You"}. </span>
-              {entry.message}
-            </p>
-            {support ? null : <ChatAvatar image={entry.image} name={entry.name} />}
-          </li>
-        );
-      })}
-    </ol>
+              {support ? <ChatAvatar image={entry.image} name={entry.name} /> : null}
+              <div
+                className={`max-w-[75%] rounded-md px-3 py-2 text-sm leading-5 text-[#141210] ${
+                  support ? "bg-[#7ec8f0]" : "bg-[#ececec]"
+                }`}
+              >
+                <span className="sr-only">{support ? "Support" : "You"}. </span>
+                {entry.imageUrl === null ? null : (
+                  <button
+                    type="button"
+                    className={`block w-full ${entry.message === "" ? "" : "mb-2"}`}
+                    onClick={() => {
+                      setPreview(entry.imageUrl);
+                    }}
+                  >
+                    {/* Attachments are UploadThing image URLs. */}
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={entry.imageUrl}
+                      alt={entry.message === "" ? "Attachment" : ""}
+                      className="max-h-48 w-full cursor-zoom-in object-cover"
+                    />
+                  </button>
+                )}
+                {entry.message}
+              </div>
+              {support ? null : <ChatAvatar image={entry.image} name={entry.name} />}
+            </li>
+          );
+        })}
+      </ol>
+      <TicketReply ticketId={ticketId} notes={notes} />
+      {preview === null ? null : <ChatImagePopup src={preview} onClose={() => setPreview(null)} />}
+    </div>
+  );
+}
+
+function ChatImagePopup({ src, onClose }: { src: string; onClose: () => void }) {
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
+
+  useEffect(() => {
+    function onKey(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        onCloseRef.current();
+      }
+    }
+    document.addEventListener("keydown", onKey);
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.body.style.overflow = previousOverflow;
+    };
+  }, []);
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-10">
+      <button type="button" aria-label="Close attachment" className="absolute inset-0 bg-black/80" onClick={onClose} />
+      <div role="dialog" aria-modal="true" aria-label="Attachment" className="relative">
+        <button
+          type="button"
+          className="absolute -top-8 right-0 text-[11px] tracking-[0.18em] text-white uppercase"
+          onClick={onClose}
+        >
+          Close
+        </button>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={src} alt="Attachment" className="max-h-[min(85vh,56rem)] max-w-[min(92vw,72rem)] object-contain" />
+      </div>
+    </div>
+  );
+}
+
+function TicketReply({ ticketId, notes }: { ticketId: Id<"tickets">; notes: boolean }) {
+  const reply = useMutation(api.tickets.reply);
+  const fileInput = useRef<HTMLInputElement>(null);
+  const [message, setMessage] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [notesOpen, setNotesOpen] = useState(false);
+
+  function sendAttachment(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file || saving) {
+      return;
+    }
+    if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
+      setError("Use a PNG, JPG, or WebP image");
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      setError("Image must be under 5MB");
+      return;
+    }
+    setSaving(true);
+    setError(null);
+    void uploadFiles("imageUploader", { files: [file] })
+      .then(async (uploaded) => {
+        const photo = uploaded[0];
+        if (photo === undefined) {
+          throw new Error("Unable to upload the image");
+        }
+        await reply({ ticketId, message: "", imageUrl: photo.ufsUrl });
+      })
+      .catch((uploadError: unknown) => {
+        setError(ticketError(uploadError));
+      })
+      .finally(() => {
+        setSaving(false);
+      });
+  }
+
+  return (
+    <>
+    <form
+      className="mt-3"
+      onSubmit={(event) => {
+        event.preventDefault();
+        if (saving) {
+          return;
+        }
+        setSaving(true);
+        setError(null);
+        void reply({ ticketId, message })
+          .then(() => {
+            setMessage("");
+          })
+          .catch((submitError: unknown) => {
+            setError(ticketError(submitError));
+          })
+          .finally(() => {
+            setSaving(false);
+          });
+      }}
+    >
+      <label className="sr-only" htmlFor={`ticket-reply-${ticketId}`}>
+        Write a message
+      </label>
+      <textarea
+        id={`ticket-reply-${ticketId}`}
+        className={`${ticketFieldClass} min-h-20`}
+        value={message}
+        required
+        disabled={saving}
+        placeholder="Write a message"
+        onChange={(event) => {
+          setError(null);
+          setMessage(event.target.value);
+        }}
+      />
+      <div className="mt-3 flex flex-wrap items-center gap-3">
+        <button
+          type="submit"
+          className="border border-foreground/20 px-6 py-3 text-[11px] tracking-[0.22em] uppercase disabled:opacity-50"
+          disabled={saving}
+        >
+          {saving ? "Sending" : "Send"}
+        </button>
+        <button
+          type="button"
+          className="border border-foreground/20 px-6 py-3 text-[11px] tracking-[0.22em] uppercase disabled:opacity-50"
+          disabled={saving}
+          onClick={() => {
+            fileInput.current?.click();
+          }}
+        >
+          Send attachment
+        </button>
+        {notes ? (
+          <button
+            type="button"
+            className="border border-foreground/20 px-6 py-3 text-[11px] tracking-[0.22em] uppercase disabled:opacity-50"
+            disabled={saving}
+            onClick={() => {
+              setNotesOpen(true);
+            }}
+          >
+            Internal notes
+          </button>
+        ) : null}
+      </div>
+      <input
+        ref={fileInput}
+        type="file"
+        accept="image/png,image/jpeg,image/webp"
+        className="sr-only"
+        aria-label="Send attachment"
+        onChange={sendAttachment}
+      />
+      {error ? <p className="mt-3 text-sm">{error}</p> : null}
+    </form>
+    {notesOpen ? <InternalNotes ticketId={ticketId} onClose={() => setNotesOpen(false)} /> : null}
+    </>
+  );
+}
+
+function InternalNotes({ ticketId, onClose }: { ticketId: Id<"tickets">; onClose: () => void }) {
+  const notes = useQuery(api.tickets.notes, { ticketId });
+  const addNote = useMutation(api.tickets.addNote);
+  const [note, setNote] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
+
+  useEffect(() => {
+    function onKey(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        onCloseRef.current();
+      }
+    }
+    document.addEventListener("keydown", onKey);
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.body.style.overflow = previousOverflow;
+    };
+  }, []);
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <button
+        type="button"
+        aria-label="Close internal notes"
+        className="absolute inset-0 bg-foreground/40"
+        onClick={onClose}
+      />
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="internal-notes-title"
+        className="relative max-h-[min(40rem,calc(100vh-2rem))] w-full max-w-lg overflow-y-auto bg-background p-6 sm:p-8"
+      >
+        <div className="flex items-center justify-between gap-4">
+          <h2 id="internal-notes-title" className="text-[11px] tracking-[0.22em] uppercase">
+            Internal notes
+          </h2>
+          <button type="button" className="text-[11px] tracking-[0.18em] uppercase" onClick={onClose}>
+            Close
+          </button>
+        </div>
+        <form
+          className="mt-6"
+          onSubmit={(event) => {
+            event.preventDefault();
+            if (saving) {
+              return;
+            }
+            setSaving(true);
+            setError(null);
+            void addNote({ ticketId, note })
+              .then(() => {
+                setNote("");
+              })
+              .catch((submitError: unknown) => {
+                setError(ticketError(submitError));
+              })
+              .finally(() => {
+                setSaving(false);
+              });
+          }}
+        >
+          <label className="sr-only" htmlFor={`ticket-note-${ticketId}`}>
+            Internal note
+          </label>
+          <textarea
+            id={`ticket-note-${ticketId}`}
+            className={`${ticketFieldClass} min-h-24`}
+            value={note}
+            required
+            disabled={saving}
+            placeholder="Write a note"
+            onChange={(event) => {
+              setError(null);
+              setNote(event.target.value);
+            }}
+          />
+          <button
+            type="submit"
+            className="mt-3 border border-foreground/20 px-6 py-3 text-[11px] tracking-[0.22em] uppercase disabled:opacity-50"
+            disabled={saving}
+          >
+            {saving ? "Saving" : "Add note"}
+          </button>
+          {error ? <p className="mt-3 text-sm">{error}</p> : null}
+        </form>
+        {notes === undefined ? (
+          <p className="mt-6 text-sm text-muted">Loading</p>
+        ) : notes.length === 0 ? null : (
+          <ol className="mt-6 flex flex-col gap-3">
+            {notes.map((entry) => (
+              <li
+                key={entry._id}
+                className={`flex items-end gap-2 ${entry.mine ? "justify-end" : "justify-start"}`}
+              >
+                {entry.mine ? null : <ChatAvatar image={entry.image} name={entry.name} />}
+                <p
+                  className={`max-w-[75%] rounded-md px-3 py-2 text-sm leading-5 text-[#141210] ${
+                    entry.mine ? "bg-[#ececec]" : "bg-[#7ec8f0]"
+                  }`}
+                >
+                  <span className="sr-only">{entry.mine ? "You" : "Support"}. </span>
+                  {entry.note}
+                </p>
+                {entry.mine ? <ChatAvatar image={entry.image} name={entry.name} /> : null}
+              </li>
+            ))}
+          </ol>
+        )}
+      </div>
+    </div>
   );
 }
 
@@ -598,6 +1004,41 @@ function ChatAvatar({ image, name }: { image: string | null; name: string | null
       ) : null}
     </span>
   );
+}
+
+function ticketMatches(
+  ticket: {
+    createdAt: number;
+    orderNumber: string | null;
+    creatorName: string | null;
+    messagesText: string;
+  },
+  query: string,
+) {
+  const needle = query.trim().toLowerCase();
+  if (needle.length === 0) {
+    return true;
+  }
+  const date = new Date(ticket.createdAt);
+  const longDate = date.toLocaleDateString("en-US", {
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+  });
+  const numericDate = date.toLocaleDateString("en-US");
+  const order = ticket.orderNumber ?? "";
+  const formatted = order.length === 0 ? "" : formatOrderNumber(order);
+  const haystack = [ticket.creatorName ?? "", longDate, numericDate, order, formatted, ticket.messagesText]
+    .join("\n")
+    .toLowerCase();
+  if (haystack.includes(needle)) {
+    return true;
+  }
+  const compactNeedle = needle.replace(/[-\s]/g, "");
+  if (compactNeedle.length === 0) {
+    return false;
+  }
+  return haystack.replace(/[-\s]/g, "").includes(compactNeedle);
 }
 
 function orderChoice(order: { orderNumber: string | null; placedAt: number }) {

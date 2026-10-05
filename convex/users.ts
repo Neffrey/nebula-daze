@@ -10,7 +10,12 @@ import { optionalLine, shippingPhone } from "../lib/shippingAddress";
 
 const themeValidator = v.union(v.literal("light"), v.literal("dark"));
 
-const roleValidator = v.union(v.literal("user"), v.literal("admin"), v.literal("banned"));
+const roleValidator = v.union(
+  v.literal("user"),
+  v.literal("support"),
+  v.literal("admin"),
+  v.literal("banned"),
+);
 
 const viewerValidator = v.object({
   name: v.union(v.string(), v.null()),
@@ -451,7 +456,7 @@ export async function profileImage(ctx: QueryCtx, user: Doc<"users">) {
   return user.image ?? null;
 }
 
-function uploadthingPhotoUrl(value: string) {
+export function uploadthingPhotoUrl(value: string) {
   if (value.length === 0 || value.length > maxPhotoUrlLength) {
     throw new Error("Upload the image again");
   }
