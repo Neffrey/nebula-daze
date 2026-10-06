@@ -7,6 +7,7 @@ import type { MutationCtx } from "./_generated/server";
 import { internalMutation, query } from "./_generated/server";
 import { requireCountryCode } from "../lib/countries";
 import { ORDER_NUMBER_ALPHABET, ORDER_NUMBER_LENGTH } from "../lib/orderNumber";
+import { requireRegion } from "../lib/regions";
 import { optionalLine, shippingPhone } from "../lib/shippingAddress";
 
 const createOrderNumber = customAlphabet(ORDER_NUMBER_ALPHABET, ORDER_NUMBER_LENGTH);
@@ -144,14 +145,18 @@ export const status = query({
 });
 
 export const insertPending = internalMutation({
-  args: checkoutArgs,
+  args: { ...checkoutArgs, shippingCents: v.number() },
   returns: v.object({
     orderId: v.id("orders"),
     total: v.number(),
     lines: v.array(pricedLine),
   }),
   handler: async (ctx, args) => {
+    if (!Number.isInteger(args.shippingCents) || args.shippingCents < 0) {
+      throw new Error("Shipping could not be calculated for this address");
+    }
     const built = await buildOrder(ctx, args);
+    const total = (Math.round(built.total * 100) + args.shippingCents) / 100;
     const orderNumber = await assignOrderNumber(ctx);
     const orderId = await ctx.db.insert("orders", {
       userId: built.userId,
@@ -164,7 +169,8 @@ export const insertPending = internalMutation({
       postalCode: built.postalCode,
       country: built.country,
       phone: built.phone,
-      total: built.total,
+      total,
+      shipping: args.shippingCents / 100,
       placedAt: Date.now(),
       paymentStatus: "pending",
     });
@@ -186,7 +192,7 @@ export const insertPending = internalMutation({
 
     return {
       orderId,
-      total: built.total,
+      total,
       lines: built.lines.map((line) => ({
         name: line.name,
         options: line.options,
@@ -289,9 +295,9 @@ async function buildOrder(ctx: MutationCtx, args: {
   const addressLine = requireText(args.addressLine, "Address", 120);
   const addressLine2 = optionalLine(args.addressLine2, "Apartment, suite, or unit", 80);
   const city = requireText(args.city, "City", 80);
-  const region = requireText(args.region, "State / Province", 80);
   const postalCode = requireText(args.postalCode, "Postal code", 20);
   const country = requireCountryCode(args.country);
+  const region = requireRegion(requireText(args.region, "State / Province", 80), country);
   const phone = shippingPhone(args.phone);
 
   if (args.items.length === 0 || args.items.length > 20) {

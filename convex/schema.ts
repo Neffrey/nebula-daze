@@ -59,6 +59,7 @@ export default defineSchema({
     country: v.optional(v.string()),
     phone: v.optional(v.string()),
     total: v.number(),
+    shipping: v.optional(v.number()),
     placedAt: v.number(),
     paymentStatus: v.optional(v.union(v.literal("pending"), v.literal("paid"))),
     stripeCheckoutSessionId: v.optional(v.string()),
@@ -121,6 +122,9 @@ export default defineSchema({
     sizeIds: v.optional(v.array(v.id("sizes"))),
     image: v.string(),
     images: v.optional(v.array(v.string())),
+    colorImages: v.optional(
+      v.array(v.object({ colorId: v.id("colors"), images: v.array(v.string()) })),
+    ),
     description: v.optional(v.string()),
     printifyId: v.optional(v.string()),
     printifyVariants: v.optional(

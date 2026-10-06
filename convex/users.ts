@@ -6,6 +6,7 @@ import type { MutationCtx, QueryCtx } from "./_generated/server";
 import { mutation, query } from "./_generated/server";
 import { prepareGoogleLink as prepareGoogleLinkForUser } from "./googleAccount";
 import { requireCountryCode } from "../lib/countries";
+import { requireRegion } from "../lib/regions";
 import { optionalLine, shippingPhone } from "../lib/shippingAddress";
 
 const themeValidator = v.union(v.literal("light"), v.literal("dark"));
@@ -258,14 +259,15 @@ export const saveAddress = mutation({
   returns: v.id("addresses"),
   handler: async (ctx, args) => {
     const user = await requireUser(ctx);
+    const country = requireCountryCode(args.country);
     const address = {
       label: requiredText(args.label, "Recipient name", 80),
       addressLine: requiredText(args.addressLine, "Address", 120),
       addressLine2: optionalLine(args.addressLine2, "Apartment, suite, or unit", 80),
       city: requiredText(args.city, "City", 80),
-      region: requiredText(args.region, "State / Province", 80),
+      region: requireRegion(requiredText(args.region, "State / Province", 80), country),
       postalCode: requiredText(args.postalCode, "Postal code", 20),
-      country: requireCountryCode(args.country),
+      country,
       phone: shippingPhone(args.phone),
     };
     if (args.addressId !== undefined) {

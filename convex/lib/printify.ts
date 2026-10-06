@@ -84,7 +84,7 @@ export type NormalizedProduct = {
   description: string;
   tags: string[];
   images: string[];
-  colors: { key: number; name: string; hex: string; hex2?: string }[];
+  colors: { key: number; name: string; hex: string; hex2?: string; images: string[] }[];
   sizes: { key: number; name: string }[];
   variants: { id: number; price: number; sku?: string; colorKey?: number; sizeKey?: number }[];
 };
@@ -121,30 +121,36 @@ export function normalizeProduct(
     return { ok: false, reason: "has no enabled variants in stock" };
   }
 
+  const sortedImages = [...(product.images ?? [])]
+    .filter((image) => isHttpsUrl(image.src))
+    .sort((a, b) => Number(b.is_default === true) - Number(a.is_default === true));
+  const images = [...new Set(sortedImages.map((image) => image.src))].slice(0, maxImages);
+
   const usedColors = new Set(variants.map((variant) => variant.colorKey));
   const usedSizes = new Set(variants.map((variant) => variant.sizeKey));
   const colors = (colorOption?.values ?? [])
     .filter((value) => usedColors.has(value.id))
     .map((value) => {
       const [hex, hex2] = (value.colors ?? []).map(normalizeHex);
+      const variantIds = new Set(
+        (product.variants ?? [])
+          .filter((variant) => variant.options.includes(value.id))
+          .map((variant) => variant.id),
+      );
+      const colorImages = sortedImages
+        .filter((image) => (image.variant_ids ?? []).some((id) => variantIds.has(id)))
+        .map((image) => image.src);
       return {
         key: value.id,
         name: value.title.trim().slice(0, 40),
         hex: hex ?? "#cccccc",
         ...(hex2 === undefined || hex2 === hex ? {} : { hex2 }),
+        images: [...new Set(colorImages)].slice(0, maxImages),
       };
     });
   const sizes = (sizeOption?.values ?? [])
     .filter((value) => usedSizes.has(value.id))
     .map((value) => ({ key: value.id, name: value.title.trim().slice(0, 40) }));
-
-  const sortedImages = [...(product.images ?? [])].sort(
-    (a, b) => Number(b.is_default === true) - Number(a.is_default === true),
-  );
-  const images = [...new Set(sortedImages.map((image) => image.src).filter(isHttpsUrl))].slice(
-    0,
-    maxImages,
-  );
   if (images.length === 0) {
     return { ok: false, reason: "has no mockup images" };
   }

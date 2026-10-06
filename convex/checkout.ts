@@ -7,6 +7,7 @@ import { LOCAL_SITE_URL, PRODUCTION_SITE_URL } from "../lib/siteUrl";
 import { components, internal } from "./_generated/api";
 import { action } from "./_generated/server";
 import { checkoutArgs } from "./orders";
+import { shippingCentsFor } from "./shipping";
 
 const stripeClient = new StripeSubscriptions(components.stripe, {});
 const allowedOrigins = new Set([LOCAL_SITE_URL, PRODUCTION_SITE_URL]);
@@ -31,7 +32,9 @@ export const pay = action({
       throw new Error("Card payments are not configured yet");
     }
 
+    const shippingCents = await shippingCentsFor(ctx, args.items, args);
     const order = await ctx.runMutation(internal.orders.insertPending, {
+      shippingCents,
       items: args.items,
       shipName: args.shipName,
       addressLine: args.addressLine,
@@ -65,16 +68,30 @@ export const pay = action({
           userId,
         },
         params: {
-          line_items: order.lines.map((line) => ({
-            quantity: line.quantity,
-            price_data: {
-              currency: "usd",
-              unit_amount: Math.round(line.unitPrice * 100),
-              product_data: {
-                name: line.options === "" ? line.name : `${line.name} (${line.options})`,
+          line_items: [
+            ...order.lines.map((line) => ({
+              quantity: line.quantity,
+              price_data: {
+                currency: "usd",
+                unit_amount: Math.round(line.unitPrice * 100),
+                product_data: {
+                  name: line.options === "" ? line.name : `${line.name} (${line.options})`,
+                },
               },
-            },
-          })),
+            })),
+            ...(shippingCents === 0
+              ? []
+              : [
+                  {
+                    quantity: 1,
+                    price_data: {
+                      currency: "usd",
+                      unit_amount: shippingCents,
+                      product_data: { name: "Shipping" },
+                    },
+                  },
+                ]),
+          ],
         },
       });
 

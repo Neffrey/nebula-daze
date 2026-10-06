@@ -10,6 +10,7 @@ import {
   type PrintifyProduct,
   type PrintifyProductPage,
 } from "./lib/printify";
+import { regionCode } from "../lib/regions";
 
 type OrderForPrintify = {
   alreadySubmitted: boolean;
@@ -176,7 +177,7 @@ export const submitOrder = internalAction({
             ...(order.email === null ? {} : { email: order.email }),
             phone: order.phone,
             country: order.country,
-            region: order.region,
+            region: regionCode(order.region, order.country) ?? order.region,
             address1: order.addressLine,
             address2: order.addressLine2,
             city: order.city,

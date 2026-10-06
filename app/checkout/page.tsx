@@ -13,6 +13,7 @@ import type { Id } from "@/convex/_generated/dataModel";
 import { formatPrice } from "@/lib/catalog";
 import { formatOrderNumber } from "@/lib/orderNumber";
 import { countryName } from "@/lib/countries";
+import { FREE_SHIPPING_MINIMUM } from "@/lib/shipping";
 
 const CHECKOUT_BAG_KEY = "narel-checkout-bag";
 
@@ -48,6 +49,19 @@ export default function CheckoutPage() {
     profile === undefined || profile === null
       ? null
       : (profile.addresses.find((address) => address._id === shippingAddressId) ?? defaultAddress);
+  const destination = defaultAddress
+    ? shippingAddress === null
+      ? null
+      : {
+          addressLine: shippingAddress.addressLine,
+          addressLine2: shippingAddress.addressLine2 ?? "",
+          city: shippingAddress.city,
+          region: shippingAddress.region ?? "",
+          postalCode: shippingAddress.postalCode,
+          country: shippingAddress.country ?? "",
+        }
+    : { addressLine, addressLine2, city, region, postalCode, country };
+  const shipping = useShippingQuote(profile ? lines : [], destination);
 
   useEffect(() => {
     if (restored.current) {
@@ -308,7 +322,7 @@ export default function CheckoutPage() {
             </form>
               )}
             </div>
-            <Summary lines={lines} subtotal={subtotal} />
+            <Summary lines={lines} subtotal={subtotal} shipping={shipping} />
           </div>
         )}
       </main>
@@ -341,12 +355,79 @@ function Field({
   );
 }
 
+type Destination = {
+  addressLine: string;
+  addressLine2: string;
+  city: string;
+  region: string;
+  postalCode: string;
+  country: string;
+};
+
+type ShippingQuote =
+  | { status: "needsAddress" }
+  | { status: "loading" }
+  | { status: "ready"; amount: number }
+  | { status: "error"; message: string };
+
+function useShippingQuote(lines: CartLine[], destination: Destination | null): ShippingQuote {
+  const quote = useAction(api.shipping.quote);
+  const complete =
+    destination !== null &&
+    [destination.addressLine, destination.city, destination.postalCode, destination.country].every(
+      (part) => part.trim().length > 0,
+    );
+  const request =
+    lines.length === 0 || !complete
+      ? null
+      : JSON.stringify({
+          items: lines.map((line) => ({
+            productId: line.productId,
+            variantId: line.variantId,
+            quantity: line.quantity,
+          })),
+          ...destination,
+        });
+  const [result, setResult] = useState<{ request: string; quote: ShippingQuote } | null>(null);
+
+  useEffect(() => {
+    if (request === null) {
+      return;
+    }
+    let current = true;
+    const timer = window.setTimeout(() => {
+      void quote(JSON.parse(request) as Parameters<typeof quote>[0])
+        .then(({ shipping }) => {
+          if (current) {
+            setResult({ request, quote: { status: "ready", amount: shipping } });
+          }
+        })
+        .catch((quoteError: unknown) => {
+          if (current) {
+            setResult({ request, quote: { status: "error", message: payErrorMessage(quoteError, "Shipping could not be calculated") } });
+          }
+        });
+    }, 500);
+    return () => {
+      current = false;
+      window.clearTimeout(timer);
+    };
+  }, [quote, request]);
+
+  if (request === null) {
+    return { status: "needsAddress" };
+  }
+  return result?.request === request ? result.quote : { status: "loading" };
+}
+
 function Summary({
   lines,
   subtotal,
+  shipping,
 }: {
   lines: CartLine[];
   subtotal: number;
+  shipping: ShippingQuote;
 }) {
   return (
     <aside>
@@ -363,18 +444,38 @@ function Summary({
           </li>
         ))}
       </ul>
-      <p className="mt-6 flex justify-between border-t border-foreground/10 pt-4 text-sm">
-        <span>Total</span>
-        <span>{formatPrice(subtotal)}</span>
-      </p>
+      <dl className="mt-6 flex flex-col gap-2 border-t border-foreground/10 pt-4 text-sm">
+        <div className="flex justify-between">
+          <dt>Subtotal</dt>
+          <dd>{formatPrice(subtotal)}</dd>
+        </div>
+        <div className="flex justify-between gap-4">
+          <dt>Shipping</dt>
+          <dd className={shipping.status === "ready" ? "" : "text-right text-muted"}>
+            {shipping.status === "ready"
+              ? shipping.amount === 0
+                ? "Complimentary"
+                : formatPrice(shipping.amount)
+              : shipping.status === "loading"
+                ? "Calculating"
+                : shipping.status === "error"
+                  ? shipping.message
+                  : "Enter your address"}
+          </dd>
+        </div>
+        <div className="flex justify-between border-t border-foreground/10 pt-2">
+          <dt>Total</dt>
+          <dd>{formatPrice(subtotal + (shipping.status === "ready" ? shipping.amount : 0))}</dd>
+        </div>
+      </dl>
       <p className="mt-3 text-sm text-muted">
-        Complimentary shipping on orders over $200. Your card is entered on Stripe, and the order is placed after the payment is confirmed.
+        Complimentary shipping on orders over {formatPrice(FREE_SHIPPING_MINIMUM)}. Your card is entered on Stripe, and the order is placed after the payment is confirmed.
       </p>
     </aside>
   );
 }
 
-function payErrorMessage(error: unknown) {
+function payErrorMessage(error: unknown, fallback = "Card checkout could not be started") {
   const message = error instanceof Error ? error.message : "";
   const uncaught = message.match(/Uncaught Error: (.*?)(?:\s+at\s+|$)/);
   if (uncaught?.[1]) {
@@ -383,7 +484,7 @@ function payErrorMessage(error: unknown) {
   if (message.length > 0 && !message.includes("[CONVEX")) {
     return message;
   }
-  return "Card checkout could not be started";
+  return fallback;
 }
 
 function rememberCheckout(lines: CartLine[], shippingAddressId: Id<"addresses"> | null) {

@@ -110,7 +110,7 @@ export function addressFrom(body: unknown): AddressParts {
     addressLine,
     addressLine2: componentText(components, "subpremise"),
     city,
-    region: componentText(components, "administrative_area_level_1"),
+    region: componentText(components, "administrative_area_level_1", "shortText"),
     postalCode: componentText(components, "postal_code"),
     country: componentText(components, "country", "shortText"),
   };

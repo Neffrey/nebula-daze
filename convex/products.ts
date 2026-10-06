@@ -49,6 +49,7 @@ const productPage = v.object({
       hex: v.string(),
       hex2: v.optional(v.string()),
       sizeIds: v.array(v.id("sizes")),
+      images: v.array(v.string()),
     }),
   ),
   sizes: v.array(v.object({ _id: v.id("sizes"), name: v.string() })),
@@ -194,6 +195,8 @@ async function productPageOptions(ctx: QueryCtx, product: Doc<"products">) {
         hex: color.hex,
         ...(color.hex2 === undefined ? {} : { hex2: color.hex2 }),
         sizeIds: entry.sizeIds,
+        images:
+          product.colorImages?.find((images) => images.colorId === color._id)?.images ?? [],
       });
     }
   }

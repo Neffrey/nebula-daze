@@ -59,30 +59,57 @@ export default function ProductPage() {
               <span className="px-2 text-muted">|</span>
               <span>{product.name}</span>
             </nav>
-            <article className="mt-6 grid items-start gap-8 sm:grid-cols-[24rem_minmax(0,1fr)] sm:gap-10 md:grid-cols-[30rem_minmax(0,1fr)]">
-              <ProductGallery key={product.slug} name={product.name} images={product.images} />
-              <div className="min-w-0">
-                <h1 className="font-display text-4xl leading-[0.95] sm:text-5xl">
-                  {product.name}
-                </h1>
-                <ProductRating productId={product._id} />
-                <h2 className="mt-8 text-sm leading-6 font-medium tracking-[0.08em] uppercase">
-                  From the {product.category.toLowerCase()} edit
-                </h2>
-                {product.description === null || product.description === "" ? null : (
-                  <p className="mt-4 max-w-md text-sm leading-6 whitespace-pre-line text-muted">
-                    {product.description}
-                  </p>
-                )}
-                <ProductPurchase key={product.slug} product={product} />
-              </div>
-            </article>
+            <ProductArticle key={product.slug} product={product} />
             <PairWith currentSlug={product.slug} />
             <ProductReviews productId={product._id} />
           </ReviewEditProvider>
         )}
       </main>
     </>
+  );
+}
+
+type ProductDetail = {
+  _id: Id<"products">;
+  name: string;
+  slug: string;
+  category: string;
+  image: string;
+  images: string[];
+  price: number;
+  description: string | null;
+  colors: ProductColor[];
+  sizes: { _id: Id<"sizes">; name: string }[];
+  purchaseVariants: PurchaseVariant[];
+};
+
+function ProductArticle({ product }: { product: ProductDetail }) {
+  const [colorId, setColorId] = useState<Id<"colors"> | null>(product.colors[0]?._id ?? null);
+  const color = product.colors.find((entry) => entry._id === colorId) ?? null;
+  const images = color !== null && color.images.length > 0 ? color.images : product.images;
+
+  return (
+    <article className="mt-6 grid items-start gap-8 sm:grid-cols-[24rem_minmax(0,1fr)] sm:gap-10 md:grid-cols-[30rem_minmax(0,1fr)]">
+      <ProductGallery key={colorId ?? "all"} name={product.name} images={images} />
+      <div className="min-w-0">
+        <h1 className="font-display text-4xl leading-[0.95] sm:text-5xl">{product.name}</h1>
+        <ProductRating productId={product._id} />
+        <h2 className="mt-8 text-sm leading-6 font-medium tracking-[0.08em] uppercase">
+          From the {product.category.toLowerCase()} edit
+        </h2>
+        {product.description === null || product.description === "" ? null : (
+          <p className="mt-4 max-w-md text-sm leading-6 whitespace-pre-line text-muted">
+            {product.description}
+          </p>
+        )}
+        <ProductPurchase
+          product={product}
+          color={color}
+          onColorChange={setColorId}
+          image={images[0] ?? product.image}
+        />
+      </div>
+    </article>
   );
 }
 
@@ -156,6 +183,7 @@ type ProductColor = {
   hex: string;
   hex2?: string;
   sizeIds: Id<"sizes">[];
+  images: string[];
 };
 
 type PurchaseVariant = {
@@ -167,24 +195,20 @@ type PurchaseVariant = {
 
 function ProductPurchase({
   product,
+  color,
+  onColorChange,
+  image,
 }: {
-  product: {
-    _id: Id<"products">;
-    name: string;
-    slug: string;
-    image: string;
-    price: number;
-    colors: ProductColor[];
-    sizes: { _id: Id<"sizes">; name: string }[];
-    purchaseVariants: PurchaseVariant[];
-  };
+  product: ProductDetail;
+  color: ProductColor | null;
+  onColorChange: (colorId: Id<"colors">) => void;
+  image: string;
 }) {
   const { colors, sizes, purchaseVariants } = product;
-  const [colorId, setColorId] = useState<Id<"colors"> | null>(colors[0]?._id ?? null);
+  const colorId = color?._id ?? null;
   const [sizeId, setSizeId] = useState<Id<"sizes"> | null>(
     sizes.length === 1 ? (sizes[0]?._id ?? null) : null,
   );
-  const color = colors.find((entry) => entry._id === colorId) ?? null;
   const available = new Set(color === null ? sizes.map((size) => size._id) : color.sizeIds);
   const size = sizes.find((entry) => entry._id === sizeId) ?? null;
   const ready = (colors.length === 0 || color !== null) && (sizes.length === 0 || size !== null);
@@ -198,7 +222,7 @@ function ProductPurchase({
   const pricesVary = prices.length > 1 && Math.min(...prices) !== Math.max(...prices);
 
   function chooseColor(next: ProductColor) {
-    setColorId(next._id);
+    onColorChange(next._id);
     if (sizeId !== null && !next.sizeIds.includes(sizeId)) {
       setSizeId(null);
     }
@@ -279,7 +303,7 @@ function ProductPurchase({
                   variantId: variant.id,
                   name: product.name,
                   slug: product.slug,
-                  image: product.image,
+                  image,
                   price: variant.price,
                   options: [color?.name, size?.name].filter((part) => part !== undefined).join(" / "),
                 }

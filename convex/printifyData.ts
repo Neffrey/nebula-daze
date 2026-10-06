@@ -17,6 +17,7 @@ export const normalizedProduct = v.object({
       name: v.string(),
       hex: v.string(),
       hex2: v.optional(v.string()),
+      images: v.array(v.string()),
     }),
   ),
   sizes: v.array(v.object({ key: v.number(), name: v.string() })),
@@ -88,6 +89,44 @@ export const removeByPrintifyId = internalMutation({
       await deleteProduct(ctx, product);
     }
     return null;
+  },
+});
+
+export const shippingLines = internalQuery({
+  args: {
+    items: v.array(
+      v.object({ productId: v.id("products"), variantId: v.number(), quantity: v.number() }),
+    ),
+  },
+  returns: v.object({
+    subtotalCents: v.number(),
+    lineItems: v.array(
+      v.object({ product_id: v.string(), variant_id: v.number(), quantity: v.number() }),
+    ),
+  }),
+  handler: async (ctx, args) => {
+    if (args.items.length === 0 || args.items.length > 20) {
+      throw new Error("Your bag is empty");
+    }
+    let subtotalCents = 0;
+    const lineItems = [];
+    for (const item of args.items) {
+      if (!Number.isInteger(item.quantity) || item.quantity < 1 || item.quantity > 10) {
+        throw new Error("Quantity must be between 1 and 10");
+      }
+      const product = await ctx.db.get("products", item.productId);
+      const variant = product?.printifyVariants?.find((entry) => entry.id === item.variantId);
+      if (!product || !variant || product.printifyId === undefined) {
+        throw new Error("That piece is no longer available");
+      }
+      subtotalCents += variant.price * item.quantity;
+      lineItems.push({
+        product_id: product.printifyId,
+        variant_id: variant.id,
+        quantity: item.quantity,
+      });
+    }
+    return { subtotalCents, lineItems };
   },
 });
 
@@ -261,6 +300,12 @@ async function upsertProduct(ctx: MutationCtx, product: Normalized) {
       });
     variants.push({ colorId, sizeIds: sizesForColor });
   }
+  const colorImages = product.colors.flatMap((color) => {
+    const colorId = colorIds.get(color.key);
+    return colorId === undefined || color.images.length === 0
+      ? []
+      : [{ colorId, images: color.images }];
+  });
   const productSizeIds =
     variants.length > 0
       ? []
@@ -281,6 +326,7 @@ async function upsertProduct(ctx: MutationCtx, product: Normalized) {
     price: lowest / 100,
     image: product.images[0] ?? "",
     images: product.images,
+    colorImages,
     description: product.description,
     variants,
     sizeIds: productSizeIds,
