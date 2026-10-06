@@ -14,6 +14,7 @@ import type * as googleAccount from "../googleAccount.js";
 import type * as http from "../http.js";
 import type * as orders from "../orders.js";
 import type * as products from "../products.js";
+import type * as reviews from "../reviews.js";
 import type * as tickets from "../tickets.js";
 import type * as users from "../users.js";
 
@@ -30,6 +31,7 @@ declare const fullApi: ApiFromModules<{
   http: typeof http;
   orders: typeof orders;
   products: typeof products;
+  reviews: typeof reviews;
   tickets: typeof tickets;
   users: typeof users;
 }>;

@@ -17,6 +17,10 @@ const listedProduct = v.object({
   image: v.string(),
 });
 
+const productDetail = listedProduct.extend({
+  _id: v.id("products"),
+});
+
 export const list = query({
   args: {},
   returns: v.array(listedProduct),
@@ -34,7 +38,7 @@ export const list = query({
 
 export const getBySlug = query({
   args: { slug: v.string() },
-  returns: v.union(listedProduct, v.null()),
+  returns: v.union(productDetail, v.null()),
   handler: async (ctx, args) => {
     const product = await ctx.db
       .query("products")
@@ -44,6 +48,7 @@ export const getBySlug = query({
       return null;
     }
     return {
+      _id: product._id,
       name: product.name,
       slug: product.slug,
       price: product.price,

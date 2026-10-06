@@ -109,4 +109,21 @@ export default defineSchema({
   })
     .index("by_slug", ["slug"])
     .index("by_name", ["name"]),
+  reviews: defineTable({
+    productId: v.id("products"),
+    userId: v.id("users"),
+    text: v.string(),
+    images: v.optional(v.array(v.string())),
+    rating: v.union(
+      v.literal(1),
+      v.literal(2),
+      v.literal(3),
+      v.literal(4),
+      v.literal(5),
+    ),
+    createdAt: v.number(),
+  })
+    .index("by_productId_and_createdAt", ["productId", "createdAt"])
+    .index("by_product_and_user", ["productId", "userId"])
+    .index("by_userId", ["userId"]),
 });
