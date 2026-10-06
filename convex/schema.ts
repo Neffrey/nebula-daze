@@ -95,4 +95,18 @@ export default defineSchema({
     note: v.string(),
     createdAt: v.number(),
   }).index("by_ticketId", ["ticketId"]),
+  products: defineTable({
+    name: v.string(),
+    slug: v.string(),
+    price: v.number(),
+    category: v.union(
+      v.literal("Tailoring"),
+      v.literal("Evening"),
+      v.literal("Knitwear"),
+      v.literal("Accessories"),
+    ),
+    image: v.string(),
+  })
+    .index("by_slug", ["slug"])
+    .index("by_name", ["name"]),
 });

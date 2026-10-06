@@ -72,6 +72,14 @@ export const products: Product[] = [
   },
 ];
 
+export function productSlug(name: string) {
+  return name
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
 export function formatPrice(cents: number) {
   return new Intl.NumberFormat("en-US", {
     style: "currency",
