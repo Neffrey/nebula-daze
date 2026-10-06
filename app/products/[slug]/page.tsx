@@ -47,14 +47,14 @@ export default function ProductPage() {
               <span className="px-2 text-muted">|</span>
               <span>{product.name}</span>
             </nav>
-            <article className="mt-6 grid items-start gap-8 sm:grid-cols-[16rem_minmax(0,1fr)] sm:gap-10 md:grid-cols-[20rem_minmax(0,1fr)]">
+            <article className="mt-6 grid items-start gap-8 sm:grid-cols-[24rem_minmax(0,1fr)] sm:gap-10 md:grid-cols-[30rem_minmax(0,1fr)]">
               <div className="relative aspect-square w-full overflow-hidden bg-surface">
                 <Image
                   src={product.image}
                   alt={product.name}
                   fill
                   priority
-                  sizes="320px"
+                  sizes="480px"
                   className="object-cover"
                 />
               </div>
@@ -111,10 +111,16 @@ function PairWith({ currentSlug }: { currentSlug: string }) {
               </div>
               <h3 className="font-display mt-4 text-2xl leading-tight">{product.name}</h3>
               <p className="mt-2 text-sm text-muted">{formatPrice(product.price)}</p>
-              <p className="mt-3 text-[11px] tracking-[0.16em] uppercase underline underline-offset-4">
-                View item
-              </p>
             </Link>
+            <div className="mt-3 grid grid-cols-2 gap-2">
+              <Link
+                href={`/products/${product.slug}`}
+                className="border border-foreground/20 px-2 py-2 text-center text-[10px] tracking-[0.12em] uppercase"
+              >
+                View item
+              </Link>
+              <AddToCart product={product} compact />
+            </div>
           </li>
         ))}
       </ul>
@@ -124,8 +130,10 @@ function PairWith({ currentSlug }: { currentSlug: string }) {
 
 function AddToCart({
   product,
+  compact = false,
 }: {
   product: { name: string; price: number; category: string; image: string };
+  compact?: boolean;
 }) {
   const { add } = useCart();
   const [added, setAdded] = useState(false);
@@ -143,7 +151,11 @@ function AddToCart({
     <button
       type="button"
       aria-live="polite"
-      className={`w-full border px-6 py-4 text-[11px] tracking-[0.22em] uppercase ${
+      className={`border text-center uppercase ${
+        compact
+          ? "px-2 py-2 text-[10px] tracking-[0.12em]"
+          : "w-full px-6 py-4 text-[11px] tracking-[0.22em]"
+      } ${
         added ? "border-foreground bg-foreground text-background" : "border-foreground/20"
       }`}
       onClick={() => {
