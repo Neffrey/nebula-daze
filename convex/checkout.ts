@@ -69,8 +69,10 @@ export const pay = action({
             quantity: line.quantity,
             price_data: {
               currency: "usd",
-              unit_amount: line.unitPrice * 100,
-              product_data: { name: line.name },
+              unit_amount: Math.round(line.unitPrice * 100),
+              product_data: {
+                name: line.options === "" ? line.name : `${line.name} (${line.options})`,
+              },
             },
           })),
         },

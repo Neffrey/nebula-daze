@@ -1,10 +1,10 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
 import { customAlphabet } from "nanoid";
-import type { Doc } from "./_generated/dataModel";
+import { internal } from "./_generated/api";
+import type { Doc, Id } from "./_generated/dataModel";
 import type { MutationCtx } from "./_generated/server";
 import { internalMutation, query } from "./_generated/server";
-import { products } from "../lib/catalog";
 import { requireCountryCode } from "../lib/countries";
 import { ORDER_NUMBER_ALPHABET, ORDER_NUMBER_LENGTH } from "../lib/orderNumber";
 import { optionalLine, shippingPhone } from "../lib/shippingAddress";
@@ -12,7 +12,8 @@ import { optionalLine, shippingPhone } from "../lib/shippingAddress";
 const createOrderNumber = customAlphabet(ORDER_NUMBER_ALPHABET, ORDER_NUMBER_LENGTH);
 
 const itemArgs = v.object({
-  name: v.string(),
+  productId: v.id("products"),
+  variantId: v.number(),
   quantity: v.number(),
 });
 
@@ -30,6 +31,7 @@ export const checkoutArgs = {
 
 const pricedLine = v.object({
   name: v.string(),
+  options: v.string(),
   quantity: v.number(),
   unitPrice: v.number(),
 });
@@ -54,6 +56,8 @@ const listedOrder = v.object({
   items: v.array(
     v.object({
       name: v.string(),
+      options: v.union(v.string(), v.null()),
+      image: v.union(v.string(), v.null()),
       quantity: v.number(),
       unitPrice: v.number(),
       trackingUrl: v.union(v.string(), v.null()),
@@ -96,6 +100,8 @@ export const listMine = query({
         shippingAddress: shippingAddressOf(order),
         items: items.map((item) => ({
           name: item.name,
+          options: item.options ?? null,
+          image: item.image ?? null,
           quantity: item.quantity,
           unitPrice: item.unitPrice,
           trackingUrl: item.trackingUrl ?? null,
@@ -169,10 +175,25 @@ export const insertPending = internalMutation({
         name: line.name,
         quantity: line.quantity,
         unitPrice: line.unitPrice,
+        productId: line.productId,
+        printifyProductId: line.printifyProductId,
+        variantId: line.variantId,
+        ...(line.sku === undefined ? {} : { sku: line.sku }),
+        ...(line.options === "" ? {} : { options: line.options }),
+        image: line.image,
       });
     }
 
-    return { orderId, total: built.total, lines: built.lines };
+    return {
+      orderId,
+      total: built.total,
+      lines: built.lines.map((line) => ({
+        name: line.name,
+        options: line.options,
+        quantity: line.quantity,
+        unitPrice: line.unitPrice,
+      })),
+    };
   },
 });
 
@@ -213,12 +234,13 @@ export const markPaid = internalMutation({
       console.error("Stripe payment did not match a pending order");
       return null;
     }
-    if (order.total * 100 !== args.amountTotal) {
+    if (Math.round(order.total * 100) !== args.amountTotal) {
       console.error("Stripe amount did not match the order");
       return null;
     }
 
     await ctx.db.patch("orders", args.orderId, { paymentStatus: "paid" });
+    await ctx.scheduler.runAfter(0, internal.printify.submitOrder, { orderId: args.orderId });
     return null;
   },
 });
@@ -248,7 +270,7 @@ export const abandonPending = internalMutation({
 });
 
 async function buildOrder(ctx: MutationCtx, args: {
-  items: { name: string; quantity: number }[];
+  items: { productId: Id<"products">; variantId: number; quantity: number }[];
   shipName: string;
   addressLine: string;
   addressLine2: string;
@@ -276,32 +298,41 @@ async function buildOrder(ctx: MutationCtx, args: {
     throw new Error("Your bag is empty");
   }
 
-  const quantities = new Map<string, number>();
+  const quantities = new Map<string, { productId: Id<"products">; variantId: number; quantity: number }>();
   for (const item of args.items) {
     if (!Number.isInteger(item.quantity) || item.quantity < 1 || item.quantity > 10) {
       throw new Error("Quantity must be between 1 and 10");
     }
-    const product = products.find((entry) => entry.name === item.name);
-    if (!product) {
-      throw new Error("That piece is no longer available");
-    }
-    const next = (quantities.get(item.name) ?? 0) + item.quantity;
+    const key = `${item.productId}:${item.variantId}`;
+    const next = (quantities.get(key)?.quantity ?? 0) + item.quantity;
     if (next > 10) {
       throw new Error("Quantity must be between 1 and 10");
     }
-    quantities.set(item.name, next);
+    quantities.set(key, { productId: item.productId, variantId: item.variantId, quantity: next });
   }
 
-  let total = 0;
-  const lines: { name: string; quantity: number; unitPrice: number }[] = [];
-  for (const [name, quantity] of quantities) {
-    const product = products.find((entry) => entry.name === name);
-    if (!product) {
+  let totalCents = 0;
+  const lines = [];
+  for (const { productId, variantId, quantity } of quantities.values()) {
+    const product = await ctx.db.get("products", productId);
+    const variant = product?.printifyVariants?.find((entry) => entry.id === variantId);
+    if (!product || !variant || product.printifyId === undefined) {
       throw new Error("That piece is no longer available");
     }
-    total += product.price * quantity;
-    lines.push({ name, quantity, unitPrice: product.price });
+    totalCents += variant.price * quantity;
+    lines.push({
+      name: product.name,
+      options: await variantLabel(ctx, variant),
+      quantity,
+      unitPrice: variant.price / 100,
+      productId,
+      printifyProductId: product.printifyId,
+      variantId,
+      sku: variant.sku,
+      image: product.image,
+    });
   }
+  const total = totalCents / 100;
 
   return {
     userId,
@@ -343,6 +374,15 @@ async function assignOrderNumber(ctx: MutationCtx) {
     }
   }
   throw new Error("Could not assign an order number");
+}
+
+async function variantLabel(
+  ctx: MutationCtx,
+  variant: { colorId?: Id<"colors">; sizeId?: Id<"sizes"> },
+) {
+  const color = variant.colorId === undefined ? null : await ctx.db.get("colors", variant.colorId);
+  const size = variant.sizeId === undefined ? null : await ctx.db.get("sizes", variant.sizeId);
+  return [color?.name, size?.name].filter((part) => part !== undefined).join(" / ");
 }
 
 function requireText(value: string, label: string, maxLength: number) {

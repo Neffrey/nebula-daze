@@ -1,105 +1,50 @@
 "use client";
 
-import { useMutation, useQuery } from "convex/react";
-import { ChangeEvent, FormEvent, useRef, useState } from "react";
+import { useAction, useMutation, useQuery } from "convex/react";
+import Link from "next/link";
+import { useState } from "react";
 import Select from "@/components/Select";
-import Swatch from "@/components/Swatch";
-import ToggleGroup from "@/components/ToggleGroup";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { formatPrice } from "@/lib/catalog";
-import { uploadFiles } from "@/lib/uploadthing";
-
-type Variant = {
-  colorId: Id<"colors">;
-  sizeIds: Id<"sizes">[];
-};
-
-type ProductDraft = {
-  name: string;
-  price: string;
-  categoryId: Id<"categories"> | "";
-  variants: Variant[];
-  sizeIds: Id<"sizes">[];
-  images: string[];
-};
-
-const emptyDraft: ProductDraft = {
-  name: "",
-  price: "",
-  categoryId: "",
-  variants: [],
-  sizeIds: [],
-  images: [],
-};
-
-const maxImages = 8;
 
 export default function ProductCatalog() {
   const products = useQuery(api.products.manageList);
-  const create = useMutation(api.products.create);
-  const [editingId, setEditingId] = useState<Id<"products"> | null>(null);
-
-  if (products === undefined) {
-    return <p className="mt-8 text-sm text-muted">Loading</p>;
-  }
+  const categories = useQuery(api.categories.manageList);
 
   return (
     <div className="mt-10">
-      <h2 className="text-[11px] tracking-[0.16em] uppercase">Add a product</h2>
-      <ProductForm
-        idPrefix="new-product"
-        initial={emptyDraft}
-        submitLabel="Add product"
-        onSubmit={async (draft) => {
-          await create(draft);
-        }}
-      />
+      <PrintifyPanel />
       <h2 className="mt-12 text-[11px] tracking-[0.16em] uppercase">Current products</h2>
-      {products.length === 0 ? (
-        <p className="mt-6 text-sm text-muted">No products yet.</p>
+      {products === undefined ? (
+        <p className="mt-6 text-sm text-muted">Loading</p>
+      ) : products.length === 0 ? (
+        <p className="mt-6 text-sm text-muted">No products yet. Sync from Printify to import them.</p>
       ) : (
         <ul className="mt-6 divide-y divide-foreground/10 border-t border-foreground/10">
           {products.map((product) => (
-            <li key={product._id} className="py-6">
-              {editingId === product._id ? (
-                <ProductForm
-                  idPrefix={`edit-${product._id}`}
-                  initial={{
-                    name: product.name,
-                    price: String(product.price),
-                    categoryId: product.categoryId,
-                    variants: product.variants,
-                    sizeIds: product.sizeIds,
-                    images: product.images,
-                  }}
-                  submitLabel="Save product"
-                  onCancel={() => setEditingId(null)}
-                  onSubmit={async () => {
-                    setEditingId(null);
-                  }}
-                  productId={product._id}
-                />
-              ) : (
-                <div className="flex items-start gap-4">
-                  {/* Product images may come from any https host. */}
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={product.images[0] ?? product.image} alt="" className="size-20 shrink-0 object-cover" />
-                  <div className="min-w-0 flex-1">
-                    <p className="font-display text-2xl leading-tight">{product.name}</p>
-                    <p className="mt-1 text-sm text-muted">
-                      {product.category} · {formatPrice(product.price)}
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setEditingId(product._id)}
-                    className="border border-foreground/20 px-3 py-2 text-[10px] tracking-[0.12em] uppercase"
-                  >
-                    Edit
-                  </button>
-                </div>
-              )}
+            <li key={product._id} className="flex flex-wrap items-center gap-4 py-5">
+              {/* Product images come from Printify or older https links. */}
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={product.image} alt="" className="size-20 shrink-0 object-cover" />
+              <div className="min-w-0 flex-1">
+                <Link
+                  href={`/products/${product.slug}`}
+                  className="font-display text-2xl leading-tight underline-offset-4 hover:underline"
+                >
+                  {product.name}
+                </Link>
+                <p className="mt-1 text-sm text-muted">
+                  {formatPrice(product.price)} · {product.variantCount}{" "}
+                  {product.variantCount === 1 ? "variant" : "variants"}
+                  {product.printifyId === null ? " · Not from Printify" : ""}
+                </p>
+              </div>
+              <CategoryPicker
+                productId={product._id}
+                categoryId={product.categoryId}
+                categories={categories ?? []}
+              />
             </li>
           ))}
         </ul>
@@ -108,360 +53,108 @@ export default function ProductCatalog() {
   );
 }
 
-function ProductForm({
-  idPrefix,
-  initial,
-  submitLabel,
-  productId,
-  onCancel,
-  onSubmit,
-}: {
-  idPrefix: string;
-  initial: ProductDraft;
-  submitLabel: string;
-  productId?: Id<"products">;
-  onCancel?: () => void;
-  onSubmit: (draft: {
-    name: string;
-    price: number;
-    categoryId: Id<"categories">;
-    variants: Variant[];
-    sizeIds: Id<"sizes">[];
-    images: string[];
-  }) => Promise<void>;
-}) {
-  const update = useMutation(api.products.update);
-  const categories = useQuery(api.categories.manageList);
-  const colors = useQuery(api.colors.manageList);
-  const sizes = useQuery(api.sizes.manageList);
-  const sizeOptions = (sizes ?? []).map((size) => ({ value: size._id, label: size.name }));
-  const fileInput = useRef<HTMLInputElement>(null);
-  const [draft, setDraft] = useState(initial);
-  const [imageUrl, setImageUrl] = useState("");
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [dragIndex, setDragIndex] = useState<number | null>(null);
-  const [overIndex, setOverIndex] = useState<number | null>(null);
+function PrintifyPanel() {
+  const sync = useAction(api.printify.syncProducts);
+  const connect = useAction(api.printify.connectWebhooks);
+  const [busy, setBusy] = useState<"sync" | "webhooks" | null>(null);
+  const [message, setMessage] = useState<string | null>(null);
+  const [skipped, setSkipped] = useState<{ title: string; reason: string }[]>([]);
 
-  function moveImage(from: number, to: number) {
-    setDraft((current) => {
-      if (from === to || from < 0 || to < 0 || from >= current.images.length || to >= current.images.length) {
-        return current;
-      }
-      const images = [...current.images];
-      const [moved] = images.splice(from, 1);
-      if (moved === undefined) {
-        return current;
-      }
-      images.splice(to, 0, moved);
-      return { ...current, images };
-    });
-  }
-
-  function addImage(url: string) {
-    const image = url.trim();
-    if (image.length === 0) {
-      return;
-    }
-    setDraft((current) => {
-      if (current.images.length >= maxImages) {
-        return current;
-      }
-      return { ...current, images: [...current.images, image] };
-    });
-  }
-
-  async function chooseImage(event: ChangeEvent<HTMLInputElement>) {
-    const files = [...(event.target.files ?? [])];
-    event.target.value = "";
-    if (files.length === 0 || saving) {
-      return;
-    }
-    for (const file of files) {
-      if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
-        setError("Use a PNG, JPG, or WebP image");
-        return;
-      }
-      if (file.size > 5 * 1024 * 1024) {
-        setError("Image must be under 5MB");
-        return;
-      }
-    }
-    setSaving(true);
-    setError(null);
-    try {
-      const uploaded = await uploadFiles("imageUploader", { files });
-      setDraft((current) => ({
-        ...current,
-        images: [...current.images, ...uploaded.map((file) => file.ufsUrl)].slice(0, maxImages),
-      }));
-    } catch (uploadError: unknown) {
-      setError(uploadError instanceof Error ? uploadError.message : "Unable to upload the image");
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  function submit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (saving) {
-      return;
-    }
-    const price = Number(draft.price);
-    const categoryId = draft.categoryId;
-    if (categoryId === "") {
-      setError("Choose a category");
-      return;
-    }
-    const values = {
-      name: draft.name,
-      price,
-      categoryId,
-      variants: draft.variants,
-      sizeIds: draft.variants.length > 0 ? [] : draft.sizeIds,
-      images: draft.images,
-    };
-    setSaving(true);
-    setError(null);
-    void (async () => {
-      if (productId === undefined) {
-        await onSubmit(values);
-        setDraft(emptyDraft);
-        setImageUrl("");
-        return;
-      }
-      await update({ productId, ...values });
-      await onSubmit(values);
-    })().catch((submitError: unknown) => {
-      setError(submitError instanceof Error ? submitError.message : "Unable to save the product");
-    }).finally(() => {
-      setSaving(false);
-    });
+  function run(kind: "sync" | "webhooks") {
+    setBusy(kind);
+    setMessage(null);
+    setSkipped([]);
+    const task =
+      kind === "sync"
+        ? sync({}).then((result) => {
+            setSkipped(result.skipped);
+            setMessage(
+              `Imported ${result.created} new, updated ${result.updated}, removed ${result.removed}.`,
+            );
+          })
+        : connect({}).then((result) => {
+            setMessage(
+              result.added.length === 0
+                ? "Webhooks were already connected."
+                : `Connected ${result.added.length} webhooks.`,
+            );
+          });
+    void task
+      .catch((error: unknown) => {
+        setMessage(error instanceof Error ? error.message : "Printify request failed");
+      })
+      .finally(() => setBusy(null));
   }
 
   return (
-    <form onSubmit={submit} className="mt-6 grid gap-4">
-      <label className="text-[11px] tracking-[0.16em] uppercase" htmlFor={`${idPrefix}-name`}>
-        Name
-        <input
-          id={`${idPrefix}-name`}
-          value={draft.name}
-          onChange={(event) => setDraft((current) => ({ ...current, name: event.target.value }))}
-          className="mt-2 block w-full border border-foreground/20 bg-transparent px-3 py-2 text-sm tracking-normal normal-case"
-        />
-      </label>
-      <label className="text-[11px] tracking-[0.16em] uppercase" htmlFor={`${idPrefix}-price`}>
-        Price
-        <input
-          id={`${idPrefix}-price`}
-          inputMode="numeric"
-          value={draft.price}
-          onChange={(event) => setDraft((current) => ({ ...current, price: event.target.value }))}
-          className="mt-2 block w-full border border-foreground/20 bg-transparent px-3 py-2 text-sm tracking-normal"
-        />
-      </label>
-      <div>
-        <label className="text-[11px] tracking-[0.16em] uppercase" htmlFor={`${idPrefix}-category`}>
-          Category
-        </label>
-        <Select
-          id={`${idPrefix}-category`}
-          className="mt-2"
-          compact
-          value={draft.categoryId}
-          placeholder="Choose a category"
-          disabled={categories === undefined}
-          options={(categories ?? []).map((category) => ({ value: category._id, label: category.name }))}
-          onChange={(categoryId) => setDraft((current) => ({ ...current, categoryId }))}
-        />
-      </div>
-      <ToggleGroup
-        label="Colors"
-        empty="Add colors in the Colors tab"
-        options={(colors ?? []).map((color) => ({
-          value: color._id,
-          label: color.name,
-          swatch: <Swatch hex={color.hex} hex2={color.hex2} className="size-4" />,
-        }))}
-        selected={draft.variants.map((variant) => variant.colorId)}
-        onChange={(colorIds) =>
-          setDraft((current) => ({
-            ...current,
-            variants: colorIds.map(
-              (colorId) =>
-                current.variants.find((variant) => variant.colorId === colorId) ?? {
-                  colorId,
-                  sizeIds: current.variants.length === 0 ? current.sizeIds : [],
-                },
-            ),
-          }))
-        }
-      />
-      {draft.variants.length === 0 ? (
-        <ToggleGroup
-          label="Sizes"
-          empty="Add sizes in the Sizes tab"
-          options={sizeOptions}
-          selected={draft.sizeIds}
-          onChange={(sizeIds) => setDraft((current) => ({ ...current, sizeIds }))}
-        />
-      ) : (
-        draft.variants.map((variant) => {
-          const color = colors?.find((candidate) => candidate._id === variant.colorId);
-          return (
-            <div key={variant.colorId} className="border-l border-foreground/20 pl-4">
-              <ToggleGroup
-                label={`Sizes in ${color?.name ?? "this color"}`}
-                empty="Add sizes in the Sizes tab"
-                options={sizeOptions}
-                selected={variant.sizeIds}
-                onChange={(sizeIds) =>
-                  setDraft((current) => ({
-                    ...current,
-                    variants: current.variants.map((entry) =>
-                      entry.colorId === variant.colorId ? { ...entry, sizeIds } : entry,
-                    ),
-                  }))
-                }
-              />
-            </div>
-          );
-        })
-      )}
-      <div>
-        <label className="text-[11px] tracking-[0.16em] uppercase" htmlFor={`${idPrefix}-image`}>
-          Images
-        </label>
-        <div className="mt-2 flex gap-2">
-          <input
-            id={`${idPrefix}-image`}
-            value={imageUrl}
-            onChange={(event) => setImageUrl(event.target.value)}
-            className="block min-w-0 flex-1 border border-foreground/20 bg-transparent px-3 py-2 text-sm tracking-normal normal-case"
-          />
-          <button
-            type="button"
-            disabled={saving || draft.images.length >= maxImages}
-            onClick={() => {
-              addImage(imageUrl);
-              setImageUrl("");
-            }}
-            className="border border-foreground/20 px-3 py-2 text-[10px] tracking-[0.12em] uppercase disabled:opacity-40"
-          >
-            Add
-          </button>
-        </div>
-      </div>
-      <div>
+    <section>
+      <h2 className="text-[11px] tracking-[0.16em] uppercase">Printify</h2>
+      <p className="mt-3 max-w-xl text-sm leading-6 text-muted">
+        Products, prices, colors, sizes, and mockups come from your Printify shop. Syncing replaces
+        the catalog with what is in Printify. Paid orders are sent to Printify and wait for your
+        approval there.
+      </p>
+      <div className="mt-4 flex flex-wrap gap-3">
         <button
           type="button"
-          disabled={saving || draft.images.length >= maxImages}
-          onClick={() => fileInput.current?.click()}
-          className="border border-foreground/20 px-3 py-2 text-[10px] tracking-[0.12em] uppercase disabled:opacity-40"
+          disabled={busy !== null}
+          onClick={() => run("sync")}
+          className="border border-foreground/20 px-6 py-3 text-[11px] tracking-[0.18em] uppercase disabled:opacity-40"
         >
-          Upload images
+          {busy === "sync" ? "Syncing" : "Sync from Printify"}
         </button>
-        <input
-          ref={fileInput}
-          type="file"
-          accept="image/png,image/jpeg,image/webp"
-          multiple
-          className="sr-only"
-          onChange={(event) => {
-            void chooseImage(event);
-          }}
-        />
+        <button
+          type="button"
+          disabled={busy !== null}
+          onClick={() => run("webhooks")}
+          className="border border-foreground/20 px-6 py-3 text-[11px] tracking-[0.18em] uppercase disabled:opacity-40"
+        >
+          {busy === "webhooks" ? "Connecting" : "Connect webhooks"}
+        </button>
       </div>
-      {draft.images.length > 1 ? (
-        <p className="text-[10px] tracking-[0.12em] uppercase text-muted">Drag an image to change its order</p>
-      ) : null}
-      {draft.images.length > 0 ? (
-        <ul className="flex flex-wrap gap-3">
-          {draft.images.map((src, imageIndex) => (
-            <li
-              key={`${src}-${imageIndex}`}
-              className={`w-24 ${overIndex === imageIndex && dragIndex !== imageIndex ? "ring-1 ring-foreground" : ""}`}
-              onDragOver={(event) => {
-                event.preventDefault();
-                if (dragIndex !== null) {
-                  setOverIndex(imageIndex);
-                }
-              }}
-              onDrop={(event) => {
-                event.preventDefault();
-                const from = Number(event.dataTransfer.getData("text/plain"));
-                if (!Number.isNaN(from)) {
-                  moveImage(from, imageIndex);
-                }
-                setDragIndex(null);
-                setOverIndex(null);
-              }}
-            >
-              <button
-                type="button"
-                draggable={!saving}
-                aria-label={`Drag image ${imageIndex + 1}`}
-                onDragStart={(event) => {
-                  setDragIndex(imageIndex);
-                  event.dataTransfer.effectAllowed = "move";
-                  event.dataTransfer.setData("text/plain", String(imageIndex));
-                }}
-                onDragEnd={() => {
-                  setDragIndex(null);
-                  setOverIndex(null);
-                }}
-                className={`block cursor-grab active:cursor-grabbing ${dragIndex === imageIndex ? "opacity-40" : ""}`}
-              >
-                {/* Product images may come from any https host. */}
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={src} alt="" draggable={false} className="size-24 object-cover" />
-              </button>
-              <div className="mt-1 flex justify-between text-[10px] tracking-[0.12em] uppercase">
-                <button
-                  type="button"
-                  aria-label={`Move image ${imageIndex + 1} earlier`}
-                  disabled={imageIndex === 0}
-                  onClick={() => moveImage(imageIndex, imageIndex - 1)}
-                  className="disabled:opacity-30"
-                >
-                  Earlier
-                </button>
-                <button
-                  type="button"
-                  aria-label={`Remove image ${imageIndex + 1}`}
-                  onClick={() =>
-                    setDraft((current) => ({
-                      ...current,
-                      images: current.images.filter((_, index) => index !== imageIndex),
-                    }))
-                  }
-                >
-                  Remove
-                </button>
-              </div>
+      {message === null ? null : <p className="mt-4 text-sm">{message}</p>}
+      {skipped.length === 0 ? null : (
+        <ul className="mt-2 text-sm text-muted">
+          {skipped.map((entry) => (
+            <li key={entry.title}>
+              Skipped {entry.title}: {entry.reason}
             </li>
           ))}
         </ul>
-      ) : null}
-      {error !== null ? <p className="text-sm">{error}</p> : null}
-      <div className="flex flex-wrap items-center gap-3">
-        <button
-          type="submit"
-          disabled={saving}
-          className="border border-foreground/20 px-6 py-3 text-[11px] tracking-[0.18em] uppercase disabled:opacity-40"
-        >
-          {saving ? "Saving" : submitLabel}
-        </button>
-        {onCancel !== undefined ? (
-          <button
-            type="button"
-            onClick={onCancel}
-            className="text-[11px] tracking-[0.16em] uppercase underline underline-offset-4"
-          >
-            Cancel
-          </button>
-        ) : null}
-      </div>
-    </form>
+      )}
+    </section>
+  );
+}
+
+function CategoryPicker({
+  productId,
+  categoryId,
+  categories,
+}: {
+  productId: Id<"products">;
+  categoryId: Id<"categories">;
+  categories: { _id: Id<"categories">; name: string }[];
+}) {
+  const setCategory = useMutation(api.products.setCategory);
+  const [error, setError] = useState<string | null>(null);
+
+  return (
+    <div className="w-full sm:w-56">
+      <Select
+        id={`category-${productId}`}
+        compact
+        value={categoryId}
+        placeholder="Choose a category"
+        disabled={categories.length === 0}
+        options={categories.map((category) => ({ value: category._id, label: category.name }))}
+        onChange={(next) => {
+          setError(null);
+          void setCategory({ productId, categoryId: next }).catch((saveError: unknown) => {
+            setError(saveError instanceof Error ? saveError.message : "Unable to save the category");
+          });
+        }}
+      />
+      {error === null ? null : <p className="mt-1 text-xs">{error}</p>}
+    </div>
   );
 }

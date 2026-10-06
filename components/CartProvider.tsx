@@ -1,20 +1,34 @@
 "use client";
 
 import { createContext, useContext, useMemo, useState, type ReactNode } from "react";
-import type { Product } from "@/lib/catalog";
+import type { Id } from "@/convex/_generated/dataModel";
 
-export type CartLine = Product & { quantity: number };
+export type CartItem = {
+  productId: Id<"products">;
+  variantId: number;
+  name: string;
+  slug: string;
+  image: string;
+  price: number;
+  options: string;
+};
+
+export type CartLine = CartItem & { key: string; quantity: number };
 
 type CartContextValue = {
   lines: CartLine[];
   count: number;
-  add: (product: Product) => void;
-  remove: (name: string) => void;
+  add: (item: CartItem) => void;
+  remove: (key: string) => void;
   replace: (lines: CartLine[]) => void;
   clear: () => void;
 };
 
 const CartContext = createContext<CartContextValue | null>(null);
+
+export function cartKey(item: { productId: string; variantId: number }) {
+  return `${item.productId}:${item.variantId}`;
+}
 
 export default function CartProvider({ children }: { children: ReactNode }) {
   const [lines, setLines] = useState<CartLine[]>([]);
@@ -23,21 +37,20 @@ export default function CartProvider({ children }: { children: ReactNode }) {
     return {
       lines,
       count: lines.reduce((sum, line) => sum + line.quantity, 0),
-      add(product) {
+      add(item) {
+        const key = cartKey(item);
         setLines((current) => {
-          const existing = current.find((line) => line.name === product.name);
+          const existing = current.find((line) => line.key === key);
           if (!existing) {
-            return [...current, { ...product, quantity: 1 }];
+            return [...current, { ...item, key, quantity: 1 }];
           }
           return current.map((line) =>
-            line.name === product.name
-              ? { ...line, quantity: line.quantity + 1 }
-              : line,
+            line.key === key ? { ...line, quantity: Math.min(10, line.quantity + 1) } : line,
           );
         });
       },
-      remove(name) {
-        setLines((current) => current.filter((line) => line.name !== name));
+      remove(key) {
+        setLines((current) => current.filter((line) => line.key !== key));
       },
       replace(next) {
         setLines(next);

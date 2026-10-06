@@ -63,15 +63,25 @@ export default defineSchema({
     paymentStatus: v.optional(v.union(v.literal("pending"), v.literal("paid"))),
     stripeCheckoutSessionId: v.optional(v.string()),
     orderNumber: v.optional(v.string()),
+    printifyOrderId: v.optional(v.string()),
+    printifyStatus: v.optional(v.string()),
+    printifyError: v.optional(v.string()),
   })
     .index("by_userId", ["userId"])
-    .index("by_orderNumber", ["orderNumber"]),
+    .index("by_orderNumber", ["orderNumber"])
+    .index("by_printifyOrderId", ["printifyOrderId"]),
   orderItems: defineTable({
     orderId: v.id("orders"),
     name: v.string(),
     quantity: v.number(),
     unitPrice: v.number(),
     trackingUrl: v.optional(v.string()),
+    productId: v.optional(v.id("products")),
+    printifyProductId: v.optional(v.string()),
+    variantId: v.optional(v.number()),
+    sku: v.optional(v.string()),
+    options: v.optional(v.string()),
+    image: v.optional(v.string()),
   }).index("by_orderId", ["orderId"]),
   tickets: defineTable({
     userId: v.id("users"),
@@ -111,10 +121,24 @@ export default defineSchema({
     sizeIds: v.optional(v.array(v.id("sizes"))),
     image: v.string(),
     images: v.optional(v.array(v.string())),
+    description: v.optional(v.string()),
+    printifyId: v.optional(v.string()),
+    printifyVariants: v.optional(
+      v.array(
+        v.object({
+          id: v.number(),
+          price: v.number(),
+          sku: v.optional(v.string()),
+          colorId: v.optional(v.id("colors")),
+          sizeId: v.optional(v.id("sizes")),
+        }),
+      ),
+    ),
   })
     .index("by_slug", ["slug"])
     .index("by_name", ["name"])
-    .index("by_categoryId", ["categoryId"]),
+    .index("by_categoryId", ["categoryId"])
+    .index("by_printifyId", ["printifyId"]),
   categories: defineTable({
     name: v.string(),
     parentId: v.optional(v.id("categories")),

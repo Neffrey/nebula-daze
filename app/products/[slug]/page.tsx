@@ -14,7 +14,7 @@ import {
   useRef,
   useState,
 } from "react";
-import { useCart } from "@/components/CartProvider";
+import AddToCartButton, { QuickAdd } from "@/components/AddToCartButton";
 import SiteHeader from "@/components/SiteHeader";
 import Swatch from "@/components/Swatch";
 import { api } from "@/convex/_generated/api";
@@ -69,15 +69,12 @@ export default function ProductPage() {
                 <h2 className="mt-8 text-sm leading-6 font-medium tracking-[0.08em] uppercase">
                   From the {product.category.toLowerCase()} edit
                 </h2>
-                <p className="mt-4 max-w-md text-sm leading-6 text-muted">
-                  Cut in a small run. Shoulders sit clean, hems fall long, and the cloth is made
-                  to be worn past midnight and again the next morning.
-                </p>
-                <p className="mt-8 text-sm">{formatPrice(product.price)}</p>
-                <ProductOptions key={product.slug} colors={product.colors} sizes={product.sizes} />
-                <div className="mt-6 max-w-sm">
-                  <AddToCart product={product} />
-                </div>
+                {product.description === null || product.description === "" ? null : (
+                  <p className="mt-4 max-w-md text-sm leading-6 whitespace-pre-line text-muted">
+                    {product.description}
+                  </p>
+                )}
+                <ProductPurchase key={product.slug} product={product} />
               </div>
             </article>
             <PairWith currentSlug={product.slug} />
@@ -161,22 +158,44 @@ type ProductColor = {
   sizeIds: Id<"sizes">[];
 };
 
-function ProductOptions({
-  colors,
-  sizes,
+type PurchaseVariant = {
+  id: number;
+  price: number;
+  colorId: Id<"colors"> | null;
+  sizeId: Id<"sizes"> | null;
+};
+
+function ProductPurchase({
+  product,
 }: {
-  colors: ProductColor[];
-  sizes: { _id: Id<"sizes">; name: string }[];
+  product: {
+    _id: Id<"products">;
+    name: string;
+    slug: string;
+    image: string;
+    price: number;
+    colors: ProductColor[];
+    sizes: { _id: Id<"sizes">; name: string }[];
+    purchaseVariants: PurchaseVariant[];
+  };
 }) {
+  const { colors, sizes, purchaseVariants } = product;
   const [colorId, setColorId] = useState<Id<"colors"> | null>(colors[0]?._id ?? null);
-  const [sizeId, setSizeId] = useState<Id<"sizes"> | null>(null);
+  const [sizeId, setSizeId] = useState<Id<"sizes"> | null>(
+    sizes.length === 1 ? (sizes[0]?._id ?? null) : null,
+  );
   const color = colors.find((entry) => entry._id === colorId) ?? null;
   const available = new Set(color === null ? sizes.map((size) => size._id) : color.sizeIds);
   const size = sizes.find((entry) => entry._id === sizeId) ?? null;
-
-  if (colors.length === 0 && sizes.length === 0) {
-    return null;
-  }
+  const ready = (colors.length === 0 || color !== null) && (sizes.length === 0 || size !== null);
+  const variant = ready
+    ? (purchaseVariants.find(
+        (entry) =>
+          entry.colorId === (color?._id ?? null) && entry.sizeId === (size?._id ?? null),
+      ) ?? null)
+    : null;
+  const prices = purchaseVariants.map((entry) => entry.price);
+  const pricesVary = prices.length > 1 && Math.min(...prices) !== Math.max(...prices);
 
   function chooseColor(next: ProductColor) {
     setColorId(next._id);
@@ -186,6 +205,12 @@ function ProductOptions({
   }
 
   return (
+    <>
+      <p className="mt-8 text-sm">
+        {variant === null && pricesVary ? "From " : ""}
+        {formatPrice(variant?.price ?? product.price)}
+      </p>
+      {colors.length === 0 && sizes.length === 0 ? null : (
     <div className="mt-6 max-w-sm space-y-5">
       {colors.length > 0 ? (
         <fieldset>
@@ -243,6 +268,32 @@ function ProductOptions({
         </fieldset>
       ) : null}
     </div>
+      )}
+      <div className="mt-6 max-w-sm">
+        <AddToCartButton
+          item={
+            variant === null
+              ? null
+              : {
+                  productId: product._id,
+                  variantId: variant.id,
+                  name: product.name,
+                  slug: product.slug,
+                  image: product.image,
+                  price: variant.price,
+                  options: [color?.name, size?.name].filter((part) => part !== undefined).join(" / "),
+                }
+          }
+          unavailableLabel={
+            purchaseVariants.length === 0
+              ? "Unavailable"
+              : sizes.length > 0 && size === null
+                ? "Select a size"
+                : "Select options"
+          }
+        />
+      </div>
+    </>
   );
 }
 
@@ -282,64 +333,12 @@ function PairWith({ currentSlug }: { currentSlug: string }) {
               >
                 View item
               </Link>
-              <AddToCart product={product} compact />
+              <QuickAdd product={product} />
             </div>
           </li>
         ))}
       </ul>
     </section>
-  );
-}
-
-function AddToCart({
-  product,
-  compact = false,
-}: {
-  product: { name: string; price: number; category: string; image: string };
-  compact?: boolean;
-}) {
-  const { add } = useCart();
-  const [added, setAdded] = useState(false);
-  const timer = useRef<number | null>(null);
-
-  useEffect(() => {
-    return () => {
-      if (timer.current !== null) {
-        window.clearTimeout(timer.current);
-      }
-    };
-  }, []);
-
-  return (
-    <button
-      type="button"
-      aria-live="polite"
-      className={`border text-center uppercase ${
-        compact
-          ? "px-2 py-2 text-[10px] tracking-[0.12em]"
-          : "w-full px-6 py-4 text-[11px] tracking-[0.22em]"
-      } ${
-        added ? "border-foreground bg-foreground text-background" : "border-foreground/20"
-      }`}
-      onClick={() => {
-        add({
-          name: product.name,
-          price: product.price,
-          category: product.category,
-          image: product.image,
-        });
-        setAdded(true);
-        if (timer.current !== null) {
-          window.clearTimeout(timer.current);
-        }
-        timer.current = window.setTimeout(() => {
-          setAdded(false);
-          timer.current = null;
-        }, 2000);
-      }}
-    >
-      {added ? "Added" : "Add to cart"}
-    </button>
   );
 }
 

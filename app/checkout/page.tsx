@@ -7,10 +7,10 @@ import AddressAutocomplete from "@/components/AddressAutocomplete";
 import OrderAddress from "@/components/OrderAddress";
 import SavedAddresses from "@/components/SavedAddresses";
 import SiteHeader from "@/components/SiteHeader";
-import { useCart, type CartLine } from "@/components/CartProvider";
+import { cartKey, useCart, type CartLine } from "@/components/CartProvider";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
-import { formatPrice, products } from "@/lib/catalog";
+import { formatPrice } from "@/lib/catalog";
 import { formatOrderNumber } from "@/lib/orderNumber";
 import { countryName } from "@/lib/countries";
 
@@ -95,7 +95,11 @@ export default function CheckoutPage() {
     setError(null);
     rememberCheckout(lines, shippingAddressId);
     void pay({
-      items: lines.map((line) => ({ name: line.name, quantity: line.quantity })),
+      items: lines.map((line) => ({
+        productId: line.productId,
+        variantId: line.variantId,
+        quantity: line.quantity,
+      })),
       origin: window.location.origin,
       ...shipping,
     })
@@ -341,7 +345,7 @@ function Summary({
   lines,
   subtotal,
 }: {
-  lines: { name: string; quantity: number; price: number }[];
+  lines: CartLine[];
   subtotal: number;
 }) {
   return (
@@ -349,9 +353,10 @@ function Summary({
       <h2 className="text-[11px] tracking-[0.22em] uppercase">Your bag</h2>
       <ul className="mt-6 flex flex-col gap-4">
         {lines.map((line) => (
-          <li key={line.name} className="flex justify-between gap-4 text-sm">
+          <li key={line.key} className="flex justify-between gap-4 text-sm">
             <span>
               {line.name}
+              {line.options === "" ? null : <span className="text-muted"> · {line.options}</span>}
               <span className="text-muted"> × {line.quantity}</span>
             </span>
             <span>{formatPrice(line.price * line.quantity)}</span>
@@ -385,7 +390,7 @@ function rememberCheckout(lines: CartLine[], shippingAddressId: Id<"addresses"> 
   sessionStorage.setItem(
     CHECKOUT_BAG_KEY,
     JSON.stringify({
-      lines: lines.map((line) => ({ name: line.name, quantity: line.quantity })),
+      lines,
       shippingAddressId,
     }),
   );
@@ -408,21 +413,11 @@ function readSavedCheckout(): { lines: CartLine[]; shippingAddressId: Id<"addres
   }
 
   const lines: CartLine[] = [];
-  for (const entry of parsed.lines) {
-    if (typeof entry !== "object" || entry === null || !("name" in entry) || !("quantity" in entry)) {
-      continue;
+  for (const entry of parsed.lines as unknown[]) {
+    const line = savedLine(entry);
+    if (line !== null) {
+      lines.push(line);
     }
-    if (typeof entry.name !== "string" || typeof entry.quantity !== "number") {
-      continue;
-    }
-    if (!Number.isInteger(entry.quantity) || entry.quantity < 1 || entry.quantity > 10) {
-      continue;
-    }
-    const product = products.find((item) => item.name === entry.name);
-    if (!product) {
-      continue;
-    }
-    lines.push({ ...product, quantity: entry.quantity });
   }
   if (lines.length === 0) {
     return null;
@@ -433,6 +428,39 @@ function readSavedCheckout(): { lines: CartLine[]; shippingAddressId: Id<"addres
       ? (parsed.shippingAddressId as Id<"addresses">)
       : null;
   return { lines, shippingAddressId };
+}
+
+function savedLine(entry: unknown): CartLine | null {
+  if (typeof entry !== "object" || entry === null) {
+    return null;
+  }
+  const value = entry as Record<string, unknown>;
+  const { productId, variantId, name, slug, image, price, options, quantity } = value;
+  if (
+    typeof productId !== "string" ||
+    typeof variantId !== "number" ||
+    typeof name !== "string" ||
+    typeof slug !== "string" ||
+    typeof image !== "string" ||
+    typeof price !== "number" ||
+    typeof options !== "string" ||
+    typeof quantity !== "number" ||
+    !Number.isInteger(quantity) ||
+    quantity < 1 ||
+    quantity > 10
+  ) {
+    return null;
+  }
+  const item = {
+    productId: productId as Id<"products">,
+    variantId,
+    name,
+    slug,
+    image,
+    price,
+    options,
+  };
+  return { ...item, key: cartKey(item), quantity };
 }
 
 function EmptyBag() {

@@ -3,13 +3,12 @@
 import { useQuery } from "convex/react";
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
-import { useCart } from "@/components/CartProvider";
+import { useState } from "react";
+import { QuickAdd } from "@/components/AddToCartButton";
 import { api } from "@/convex/_generated/api";
-import { formatPrice, type Product } from "@/lib/catalog";
+import { formatPrice } from "@/lib/catalog";
 
 export default function Collection() {
-  const { add } = useCart();
   const products = useQuery(api.products.list);
   const categories = ["New", ...(useQuery(api.categories.list) ?? [])];
   const [active, setActive] = useState("New");
@@ -82,15 +81,7 @@ export default function Collection() {
                   >
                     View item
                   </Link>
-                  <AddToCart
-                    product={{
-                      name: product.name,
-                      price: product.price,
-                      category: product.category,
-                      image: product.image,
-                    }}
-                    add={add}
-                  />
+                  <QuickAdd product={product} />
                 </div>
               </div>
             </article>
@@ -99,41 +90,5 @@ export default function Collection() {
       </ul>
       )}
     </section>
-  );
-}
-
-function AddToCart({ product, add }: { product: Product; add: (product: Product) => void }) {
-  const [added, setAdded] = useState(false);
-  const timer = useRef<number | null>(null);
-
-  useEffect(() => {
-    return () => {
-      if (timer.current !== null) {
-        window.clearTimeout(timer.current);
-      }
-    };
-  }, []);
-
-  return (
-    <button
-      type="button"
-      aria-live="polite"
-      className={`border px-2 py-2 text-center text-[10px] tracking-[0.12em] uppercase ${
-        added ? "border-foreground bg-foreground text-background" : "border-foreground/20"
-      }`}
-      onClick={() => {
-        add(product);
-        setAdded(true);
-        if (timer.current !== null) {
-          window.clearTimeout(timer.current);
-        }
-        timer.current = window.setTimeout(() => {
-          setAdded(false);
-          timer.current = null;
-        }, 2000);
-      }}
-    >
-      {added ? "Added" : "Add to cart"}
-    </button>
   );
 }

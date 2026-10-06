@@ -14,7 +14,7 @@ import Select from "@/components/Select";
 import SiteHeader from "@/components/SiteHeader";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
-import { formatPrice, products } from "@/lib/catalog";
+import { formatPrice } from "@/lib/catalog";
 import { formatOrderNumber } from "@/lib/orderNumber";
 import { hasAbility, type AccountRole } from "@/lib/roles";
 import { uploadFiles } from "@/lib/uploadthing";
@@ -217,10 +217,10 @@ function Orders() {
             </p>
           </div>
           <ul className="flex flex-col gap-4 px-4 py-4">
-            {order.items.map((item) => {
-              const image = products.find((product) => product.name === item.name)?.image;
+            {order.items.map((item, itemIndex) => {
+              const image = item.image;
               return (
-                <li key={item.name} className="flex items-center gap-4">
+                <li key={`${item.name}-${itemIndex}`} className="flex items-center gap-4">
                   <div className="relative h-24 w-18 shrink-0 overflow-hidden bg-surface">
                     {image ? (
                       <Image src={image} alt="" fill sizes="72px" className="object-cover" />
@@ -228,6 +228,9 @@ function Orders() {
                   </div>
                   <p className="min-w-0 flex-1 font-display text-xl leading-tight">
                     {item.name}
+                    {item.options === null ? null : (
+                      <span className="mt-1 block font-sans text-sm text-muted">{item.options}</span>
+                    )}
                     <span className="mt-1 block font-sans text-sm text-muted">× {item.quantity}</span>
                   </p>
                   <ItemActions trackingUrl={item.trackingUrl} />

@@ -122,14 +122,17 @@ export default function SiteHeader() {
             ) : (
               <ul className="mt-10 flex flex-1 flex-col gap-6 overflow-y-auto">
                 {lines.map((line) => (
-                  <li key={line.name} className="flex items-start justify-between gap-4">
+                  <li key={line.key} className="flex items-start justify-between gap-4">
                     <div>
                       <p className="font-display text-2xl leading-tight">{line.name}</p>
+                      {line.options === "" ? null : (
+                        <p className="mt-1 text-sm text-muted">{line.options}</p>
+                      )}
                       <p className="mt-1 text-sm text-muted">Qty {line.quantity}</p>
                       <button
                         type="button"
                         className="mt-2 text-[11px] tracking-[0.16em] uppercase underline underline-offset-4"
-                        onClick={() => remove(line.name)}
+                        onClick={() => remove(line.key)}
                       >
                         Remove
                       </button>
