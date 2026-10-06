@@ -15,6 +15,7 @@ import { formatPrice, products } from "@/lib/catalog";
 import { formatOrderNumber } from "@/lib/orderNumber";
 import { hasAbility, type AccountRole } from "@/lib/roles";
 import { uploadFiles } from "@/lib/uploadthing";
+import { FaCircleExclamation } from "react-icons/fa6";
 
 const sectionByQuery = {
   profile: "Profile & Security",
@@ -345,7 +346,7 @@ function OrderFact({ label, children }: { label: string; children: string }) {
   );
 }
 
-const supportViews = ["New ticket", "active tickets", "archived tickets"] as const;
+const supportViews = ["New ticket", "active tickets", "closed tickets"] as const;
 
 type SupportView = (typeof supportViews)[number];
 
@@ -355,18 +356,20 @@ function Support() {
 
   return (
     <div className="mt-8">
-      <TicketSearch id="support-ticket-search" value={query} onChange={setQuery} />
       <SectionTabs label="Support" items={supportViews} view={view} onView={setView} />
       {view === "New ticket" ? (
         <NewTicket />
       ) : (
-        <TicketList archived={view === "archived tickets"} query={query} />
+        <>
+          <TicketSearch id="support-ticket-search" value={query} onChange={setQuery} />
+          <TicketList closed={view === "closed tickets"} query={query} />
+        </>
       )}
     </div>
   );
 }
 
-const ticketViews = ["active tickets", "archived tickets"] as const;
+const ticketViews = ["active tickets", "closed tickets"] as const;
 
 type TicketView = (typeof ticketViews)[number];
 
@@ -376,9 +379,9 @@ function TicketQueue() {
 
   return (
     <div className="mt-8">
-      <TicketSearch id="tickets-search" value={query} onChange={setQuery} />
       <SectionTabs label="Tickets" items={ticketViews} view={view} onView={setView} />
-      <TicketList archived={view === "archived tickets"} everyone query={query} />
+      <TicketSearch id="tickets-search" value={query} onChange={setQuery} />
+      <TicketList closed={view === "closed tickets"} everyone query={query} />
     </div>
   );
 }
@@ -393,7 +396,7 @@ function TicketSearch({
   onChange: (value: string) => void;
 }) {
   return (
-    <div className="relative mb-6">
+    <div className="relative mt-6">
       <input
         id={id}
         type="search"
@@ -550,15 +553,15 @@ function NewTicket() {
 }
 
 function TicketList({
-  archived,
+  closed,
   everyone = false,
   query,
 }: {
-  archived: boolean;
+  closed: boolean;
   everyone?: boolean;
   query: string;
 }) {
-  const status = archived ? "archived" : "active";
+  const status = closed ? "closed" : "active";
   const mine = useQuery(api.tickets.listMine, everyone ? "skip" : {});
   const queue = useQuery(api.tickets.listAll, everyone ? { status } : "skip");
   const tickets = everyone ? queue : mine;
@@ -573,8 +576,8 @@ function TicketList({
       <p className="mt-8 text-sm text-muted">
         {query.trim().length > 0
           ? "No matching tickets."
-          : archived
-            ? "No archived tickets."
+          : closed
+            ? "No closed tickets."
             : "No active tickets."}
       </p>
     );
@@ -600,22 +603,26 @@ function TicketRow({
     preview: string;
     creatorName: string | null;
     creatorImage: string | null;
+    lastFromOther: boolean;
+    lastFromCreator: boolean;
+    status: "active" | "closed";
   };
   showCreator: boolean;
 }) {
   const [open, setOpen] = useState(false);
+  const waiting = showCreator ? ticket.lastFromCreator : ticket.lastFromOther;
 
   return (
     <li className="border-b border-foreground/10">
       <button
         type="button"
         aria-expanded={open}
-        className="flex w-full items-center gap-4 py-4 text-left"
+        className="relative flex w-full items-center gap-4 py-4 text-left"
         onClick={() => {
           setOpen((current) => !current);
         }}
       >
-        <span className="min-w-0 flex-1">
+        <span className={`min-w-0 flex-1 ${waiting && !showCreator ? "pr-6" : ""}`}>
           <p className="flex flex-wrap items-baseline gap-x-4 text-sm">
             <span>
               {new Date(ticket.createdAt).toLocaleDateString("en-US", {
@@ -631,15 +638,33 @@ function TicketRow({
           <p className="mt-2 text-sm text-muted">{ticket.preview}</p>
         </span>
         {showCreator ? (
-          <ChatAvatar image={ticket.creatorImage} name={ticket.creatorName} />
+          <span className={waiting ? "pr-6" : undefined}>
+            <ChatAvatar image={ticket.creatorImage} name={ticket.creatorName} />
+          </span>
+        ) : null}
+        {waiting ? (
+          <FaCircleExclamation
+            className="absolute top-4 right-0 size-4 text-red-600"
+            aria-label="New reply"
+          />
         ) : null}
       </button>
-      {open ? <TicketLog ticketId={ticket._id} notes={showCreator} /> : null}
+      {open ? (
+        <TicketLog ticketId={ticket._id} notes={showCreator} status={ticket.status} />
+      ) : null}
     </li>
   );
 }
 
-function TicketLog({ ticketId, notes }: { ticketId: Id<"tickets">; notes: boolean }) {
+function TicketLog({
+  ticketId,
+  notes,
+  status,
+}: {
+  ticketId: Id<"tickets">;
+  notes: boolean;
+  status: "active" | "closed";
+}) {
   const messages = useQuery(api.tickets.messages, { ticketId });
   const [preview, setPreview] = useState<string | null>(null);
   if (messages === undefined) {
@@ -690,7 +715,7 @@ function TicketLog({ ticketId, notes }: { ticketId: Id<"tickets">; notes: boolea
           );
         })}
       </ol>
-      <TicketReply ticketId={ticketId} notes={notes} />
+      <TicketReply ticketId={ticketId} notes={notes} status={status} />
       {preview === null ? null : <ChatImagePopup src={preview} onClose={() => setPreview(null)} />}
     </div>
   );
@@ -733,13 +758,24 @@ function ChatImagePopup({ src, onClose }: { src: string; onClose: () => void }) 
   );
 }
 
-function TicketReply({ ticketId, notes }: { ticketId: Id<"tickets">; notes: boolean }) {
+function TicketReply({
+  ticketId,
+  notes,
+  status,
+}: {
+  ticketId: Id<"tickets">;
+  notes: boolean;
+  status: "active" | "closed";
+}) {
   const reply = useMutation(api.tickets.reply);
+  const closeTicket = useMutation(api.tickets.close);
   const fileInput = useRef<HTMLInputElement>(null);
   const [message, setMessage] = useState("");
   const [saving, setSaving] = useState(false);
+  const [closing, setClosing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notesOpen, setNotesOpen] = useState(false);
+  const busy = saving || closing;
 
   function sendAttachment(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
@@ -804,7 +840,7 @@ function TicketReply({ ticketId, notes }: { ticketId: Id<"tickets">; notes: bool
         className={`${ticketFieldClass} min-h-20`}
         value={message}
         required
-        disabled={saving}
+        disabled={busy}
         placeholder="Write a message"
         onChange={(event) => {
           setError(null);
@@ -815,14 +851,14 @@ function TicketReply({ ticketId, notes }: { ticketId: Id<"tickets">; notes: bool
         <button
           type="submit"
           className="border border-foreground/20 px-6 py-3 text-[11px] tracking-[0.22em] uppercase disabled:opacity-50"
-          disabled={saving}
+          disabled={busy}
         >
           {saving ? "Sending" : "Send"}
         </button>
         <button
           type="button"
           className="border border-foreground/20 px-6 py-3 text-[11px] tracking-[0.22em] uppercase disabled:opacity-50"
-          disabled={saving}
+          disabled={busy}
           onClick={() => {
             fileInput.current?.click();
           }}
@@ -833,12 +869,35 @@ function TicketReply({ ticketId, notes }: { ticketId: Id<"tickets">; notes: bool
           <button
             type="button"
             className="border border-foreground/20 px-6 py-3 text-[11px] tracking-[0.22em] uppercase disabled:opacity-50"
-            disabled={saving}
+            disabled={busy}
             onClick={() => {
               setNotesOpen(true);
             }}
           >
             Internal notes
+          </button>
+        ) : null}
+        {notes && status === "active" ? (
+          <button
+            type="button"
+            className="border border-foreground/20 px-6 py-3 text-[11px] tracking-[0.22em] uppercase disabled:opacity-50"
+            disabled={busy}
+            onClick={() => {
+              if (busy) {
+                return;
+              }
+              setClosing(true);
+              setError(null);
+              void closeTicket({ ticketId })
+                .catch((closeError: unknown) => {
+                  setError(ticketError(closeError));
+                })
+                .finally(() => {
+                  setClosing(false);
+                });
+            }}
+          >
+            {closing ? "Closing" : "Close ticket"}
           </button>
         ) : null}
       </div>

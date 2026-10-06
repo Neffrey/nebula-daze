@@ -1,14 +1,14 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
 import { hasAbility } from "../lib/roles";
-import type { Doc } from "./_generated/dataModel";
+import type { Doc, Id } from "./_generated/dataModel";
 import { mutation, query, type MutationCtx, type QueryCtx } from "./_generated/server";
 import { profileImage, uploadthingPhotoUrl } from "./users";
 
 const maxMessageLength = 2000;
 const snippetLength = 48;
 
-const ticketStatus = v.union(v.literal("active"), v.literal("archived"));
+const ticketStatus = v.union(v.literal("active"), v.literal("closed"));
 
 const listedTicket = v.object({
   _id: v.id("tickets"),
@@ -19,6 +19,8 @@ const listedTicket = v.object({
   creatorName: v.union(v.string(), v.null()),
   creatorImage: v.union(v.string(), v.null()),
   messagesText: v.string(),
+  lastFromOther: v.boolean(),
+  lastFromCreator: v.boolean(),
 });
 
 export const listMine = query({
@@ -38,7 +40,7 @@ export const listMine = query({
 
     const listed = [];
     for (const ticket of tickets) {
-      listed.push(await presentTicket(ctx, ticket));
+      listed.push(await presentTicket(ctx, ticket, userId));
     }
     return listed;
   },
@@ -65,7 +67,7 @@ export const listAll = query({
 
     const listed = [];
     for (const ticket of tickets) {
-      listed.push(await presentTicket(ctx, ticket));
+      listed.push(await presentTicket(ctx, ticket, userId));
     }
     return listed;
   },
@@ -290,6 +292,23 @@ export const addNote = mutation({
   },
 });
 
+export const close = mutation({
+  args: { ticketId: v.id("tickets") },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const userId = await supportUserId(ctx);
+    if (userId === null) {
+      throw new Error("Unauthorized");
+    }
+    const ticket = await ctx.db.get("tickets", args.ticketId);
+    if (ticket === null) {
+      throw new Error("Ticket not found");
+    }
+    await ctx.db.patch("tickets", args.ticketId, { status: "closed" });
+    return null;
+  },
+});
+
 async function supportUserId(ctx: QueryCtx | MutationCtx) {
   const userId = await getAuthUserId(ctx);
   if (userId === null) {
@@ -302,12 +321,14 @@ async function supportUserId(ctx: QueryCtx | MutationCtx) {
   return userId;
 }
 
-async function presentTicket(ctx: QueryCtx, ticket: Doc<"tickets">) {
+async function presentTicket(ctx: QueryCtx, ticket: Doc<"tickets">, userId: Id<"users">) {
   const messages = [];
+  let lastAuthorId: Id<"users"> | null = null;
   for (const messageId of ticket.messages) {
     const entry = await ctx.db.get("ticketMessages", messageId);
     if (entry !== null) {
       messages.push(entry.message);
+      lastAuthorId = entry.userId;
     }
   }
   const order = ticket.orderId === undefined ? null : await ctx.db.get("orders", ticket.orderId);
@@ -321,6 +342,8 @@ async function presentTicket(ctx: QueryCtx, ticket: Doc<"tickets">) {
     creatorName: creator?.displayName ?? creator?.name ?? null,
     creatorImage: creator === null ? null : await profileImage(ctx, creator),
     messagesText: messages.join("\n"),
+    lastFromOther: lastAuthorId !== null && lastAuthorId !== userId,
+    lastFromCreator: lastAuthorId !== null && lastAuthorId === ticket.userId,
   };
 }
 

@@ -78,7 +78,7 @@ export default defineSchema({
     orderId: v.optional(v.id("orders")),
     createdAt: v.number(),
     messages: v.array(v.id("ticketMessages")),
-    status: v.optional(v.union(v.literal("active"), v.literal("archived"))),
+    status: v.optional(v.union(v.literal("active"), v.literal("closed"))),
   })
     .index("by_userId", ["userId"])
     .index("by_status", ["status"]),
