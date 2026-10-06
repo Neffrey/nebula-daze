@@ -66,6 +66,7 @@ export default defineSchema({
     orderNumber: v.optional(v.string()),
     printifyOrderId: v.optional(v.string()),
     printifyStatus: v.optional(v.string()),
+    statusUpdatedAt: v.optional(v.number()),
     printifyError: v.optional(v.string()),
   })
     .index("by_userId", ["userId"])

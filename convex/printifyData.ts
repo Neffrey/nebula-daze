@@ -207,6 +207,7 @@ export const recordSubmission = internalMutation({
         printifyOrderId: args.printifyOrderId,
         printifyStatus: "pending",
         printifyError: undefined,
+        statusUpdatedAt: Date.now(),
       });
     } else if (args.error !== undefined) {
       await ctx.db.patch("orders", order._id, { printifyError: args.error.slice(0, 500) });
@@ -223,8 +224,18 @@ export const setStatus = internalMutation({
       .query("orders")
       .withIndex("by_printifyOrderId", (q) => q.eq("printifyOrderId", args.printifyOrderId))
       .unique();
-    if (order !== null) {
-      await ctx.db.patch("orders", order._id, { printifyStatus: args.status.slice(0, 60) });
+    if (order === null) {
+      return null;
+    }
+    const status = args.status.slice(0, 60);
+    if (order.printifyStatus === "delivered" && status !== "canceled") {
+      return null;
+    }
+    if (order.printifyStatus !== status) {
+      await ctx.db.patch("orders", order._id, {
+        printifyStatus: status,
+        statusUpdatedAt: Date.now(),
+      });
     }
     return null;
   },
@@ -251,6 +262,7 @@ export const setTracking = internalMutation({
       .take(20);
     const skus = new Set(args.skus);
     const matched = items.filter((item) => item.sku !== undefined && skus.has(item.sku));
+    await ctx.db.patch("orders", order._id, { statusUpdatedAt: Date.now() });
     for (const item of matched.length > 0 ? matched : items) {
       await ctx.db.patch("orderItems", item._id, { trackingUrl: args.trackingUrl });
     }

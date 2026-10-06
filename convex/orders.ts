@@ -54,6 +54,18 @@ const listedOrder = v.object({
   placedAt: v.number(),
   total: v.number(),
   shippingAddress,
+  status: v.object({
+    step: v.union(
+      v.literal("received"),
+      v.literal("production"),
+      v.literal("shipped"),
+      v.literal("delivered"),
+      v.literal("canceled"),
+    ),
+    label: v.string(),
+    detail: v.string(),
+    updatedAt: v.number(),
+  }),
   items: v.array(
     v.object({
       name: v.string(),
@@ -99,6 +111,7 @@ export const listMine = query({
         placedAt: order.placedAt,
         total: order.total,
         shippingAddress: shippingAddressOf(order),
+        status: customerStatus(order, items.some((item) => item.trackingUrl !== undefined)),
         items: items.map((item) => ({
           name: item.name,
           options: item.options ?? null,
@@ -352,6 +365,63 @@ async function buildOrder(ctx: MutationCtx, args: {
     phone,
     total,
     lines,
+  };
+}
+
+function customerStatus(order: Doc<"orders">, hasTracking: boolean) {
+  const updatedAt = order.statusUpdatedAt ?? order.placedAt;
+  switch (order.printifyStatus) {
+    case "canceled":
+      return {
+        step: "canceled" as const,
+        label: "Canceled",
+        detail: "This order was canceled. Contact support with any questions.",
+        updatedAt,
+      };
+    case "delivered":
+      return {
+        step: "delivered" as const,
+        label: "Delivered",
+        detail: "The carrier marked this order as delivered.",
+        updatedAt,
+      };
+    case "fulfilled":
+    case "shipped":
+      return {
+        step: "shipped" as const,
+        label: "Shipped",
+        detail: "Your order is on its way. Use the tracking link to follow it.",
+        updatedAt,
+      };
+    case "partially-fulfilled":
+      return {
+        step: "shipped" as const,
+        label: "Partially shipped",
+        detail: "Part of your order is on its way. The rest will follow.",
+        updatedAt,
+      };
+  }
+  if (hasTracking) {
+    return {
+      step: "shipped" as const,
+      label: "Shipped",
+      detail: "Your order is on its way. Use the tracking link to follow it.",
+      updatedAt,
+    };
+  }
+  if (order.printifyStatus === "sending-to-production" || order.printifyStatus === "in-production") {
+    return {
+      step: "production" as const,
+      label: "In production",
+      detail: "Your pieces are being made. Tracking appears here when they ship.",
+      updatedAt,
+    };
+  }
+  return {
+    step: "received" as const,
+    label: "Order received",
+    detail: "Payment is confirmed and your order is being prepared for production.",
+    updatedAt,
   };
 }
 

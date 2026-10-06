@@ -170,7 +170,7 @@ export const submitOrder = internalAction({
           label: order.orderNumber ?? undefined,
           line_items: lineItems,
           shipping_method: 1,
-          send_shipping_notification: false,
+          send_shipping_notification: true,
           address_to: {
             first_name: firstName,
             last_name: rest.join(" ") || firstName,

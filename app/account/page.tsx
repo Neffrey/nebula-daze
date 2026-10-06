@@ -216,6 +216,7 @@ function Orders() {
               {order.orderNumber === null ? "Order" : `Order #${formatOrderNumber(order.orderNumber)}`}
             </p>
           </div>
+          <OrderStatus status={order.status} />
           <ul className="flex flex-col gap-4 px-4 py-4">
             {order.items.map((item, itemIndex) => {
               const image = item.image;
@@ -241,6 +242,62 @@ function Orders() {
         </li>
       ))}
     </ul>
+  );
+}
+
+type OrderStep = "received" | "production" | "shipped" | "delivered" | "canceled";
+
+const orderSteps: { step: Exclude<OrderStep, "canceled">; label: string }[] = [
+  { step: "received", label: "Received" },
+  { step: "production", label: "In production" },
+  { step: "shipped", label: "Shipped" },
+  { step: "delivered", label: "Delivered" },
+];
+
+function OrderStatus({
+  status,
+}: {
+  status: { step: OrderStep; label: string; detail: string; updatedAt: number };
+}) {
+  const reached = orderSteps.findIndex((entry) => entry.step === status.step);
+  return (
+    <section
+      aria-label="Order status"
+      className="border-b border-foreground/10 px-4 py-4"
+    >
+      <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1">
+        <p className="text-[11px] tracking-[0.16em] uppercase">
+          Status <span className="text-muted">· {status.label}</span>
+        </p>
+        <p className="text-xs text-muted">
+          Updated{" "}
+          {new Date(status.updatedAt).toLocaleDateString("en-US", {
+            month: "long",
+            day: "numeric",
+            year: "numeric",
+          })}
+        </p>
+      </div>
+      {status.step === "canceled" ? null : (
+        <ol className="mt-3 grid grid-cols-4 gap-2">
+          {orderSteps.map((entry, index) => (
+            <li key={entry.step} aria-current={index === reached ? "step" : undefined}>
+              <span
+                className={`block h-1 ${index <= reached ? "bg-foreground" : "bg-foreground/15"}`}
+              />
+              <span
+                className={`mt-2 block text-[10px] tracking-[0.12em] uppercase ${
+                  index <= reached ? "" : "text-muted"
+                }`}
+              >
+                {entry.label}
+              </span>
+            </li>
+          ))}
+        </ol>
+      )}
+      <p className="mt-3 text-sm text-muted">{status.detail}</p>
+    </section>
   );
 }
 
