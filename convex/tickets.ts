@@ -21,6 +21,8 @@ const listedTicket = v.object({
   messagesText: v.string(),
   lastFromOther: v.boolean(),
   lastFromCreator: v.boolean(),
+  lastUpdatedAt: v.number(),
+  lastAuthorName: v.union(v.string(), v.null()),
 });
 
 export const listMine = query({
@@ -324,15 +326,21 @@ async function supportUserId(ctx: QueryCtx | MutationCtx) {
 async function presentTicket(ctx: QueryCtx, ticket: Doc<"tickets">, userId: Id<"users">) {
   const messages = [];
   let lastAuthorId: Id<"users"> | null = null;
+  let lastUpdatedAt = ticket.createdAt;
   for (const messageId of ticket.messages) {
     const entry = await ctx.db.get("ticketMessages", messageId);
     if (entry !== null) {
       messages.push(entry.message);
       lastAuthorId = entry.userId;
+      lastUpdatedAt = entry.createdAt;
     }
   }
   const order = ticket.orderId === undefined ? null : await ctx.db.get("orders", ticket.orderId);
   const creator = await ctx.db.get("users", ticket.userId);
+  const lastAuthor =
+    lastAuthorId === null || lastAuthorId === ticket.userId
+      ? creator
+      : await ctx.db.get("users", lastAuthorId);
   return {
     _id: ticket._id,
     createdAt: ticket.createdAt,
@@ -344,6 +352,8 @@ async function presentTicket(ctx: QueryCtx, ticket: Doc<"tickets">, userId: Id<"
     messagesText: messages.join("\n"),
     lastFromOther: lastAuthorId !== null && lastAuthorId !== userId,
     lastFromCreator: lastAuthorId !== null && lastAuthorId === ticket.userId,
+    lastUpdatedAt,
+    lastAuthorName: lastAuthor?.displayName ?? lastAuthor?.name ?? null,
   };
 }
 

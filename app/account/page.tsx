@@ -605,6 +605,8 @@ function TicketRow({
     creatorImage: string | null;
     lastFromOther: boolean;
     lastFromCreator: boolean;
+    lastUpdatedAt: number;
+    lastAuthorName: string | null;
     status: "active" | "closed";
   };
   showCreator: boolean;
@@ -617,12 +619,12 @@ function TicketRow({
       <button
         type="button"
         aria-expanded={open}
-        className="relative flex w-full items-center gap-4 py-4 text-left"
+        className="flex w-full items-start gap-4 py-4 text-left"
         onClick={() => {
           setOpen((current) => !current);
         }}
       >
-        <span className={`min-w-0 flex-1 ${waiting && !showCreator ? "pr-6" : ""}`}>
+        <span className="min-w-0 flex-1">
           <p className="flex flex-wrap items-baseline gap-x-4 text-sm">
             <span>
               {new Date(ticket.createdAt).toLocaleDateString("en-US", {
@@ -637,17 +639,20 @@ function TicketRow({
           </p>
           <p className="mt-2 text-sm text-muted">{ticket.preview}</p>
         </span>
-        {showCreator ? (
-          <span className={waiting ? "pr-6" : undefined}>
-            <ChatAvatar image={ticket.creatorImage} name={ticket.creatorName} />
+        <span className="flex shrink-0 flex-col items-end gap-2">
+          <span className="flex items-start gap-2">
+            <span className="text-right text-xs leading-4 whitespace-nowrap text-muted" suppressHydrationWarning>
+              {lastUpdatedLabel(ticket.lastUpdatedAt, ticket.lastAuthorName)}
+            </span>
+            {waiting ? (
+              <FaCircleExclamation
+                className="size-4 shrink-0 text-red-600"
+                aria-label="New reply"
+              />
+            ) : null}
           </span>
-        ) : null}
-        {waiting ? (
-          <FaCircleExclamation
-            className="absolute top-4 right-0 size-4 text-red-600"
-            aria-label="New reply"
-          />
-        ) : null}
+          <ChatAvatar image={ticket.creatorImage} name={ticket.creatorName} />
+        </span>
       </button>
       {open ? (
         <TicketLog ticketId={ticket._id} notes={showCreator} status={ticket.status} />
@@ -1063,6 +1068,31 @@ function ChatAvatar({ image, name }: { image: string | null; name: string | null
       ) : null}
     </span>
   );
+}
+
+function lastUpdatedLabel(at: number, name: string | null) {
+  const elapsed = Math.max(0, Date.now() - at);
+  const minute = 60 * 1000;
+  const hour = 60 * minute;
+  const day = 24 * hour;
+  const year = 365 * day;
+  let count: number;
+  let unit: "minute" | "hour" | "day" | "year";
+  if (elapsed >= year) {
+    count = Math.floor(elapsed / year);
+    unit = "year";
+  } else if (elapsed >= day) {
+    count = Math.floor(elapsed / day);
+    unit = "day";
+  } else if (elapsed >= hour) {
+    count = Math.floor(elapsed / hour);
+    unit = "hour";
+  } else {
+    count = Math.max(1, Math.floor(elapsed / minute));
+    unit = "minute";
+  }
+  const who = name === null || name.trim() === "" ? "" : ` by ${name.trim()}`;
+  return `last updated${who} ${count} ${count === 1 ? unit : `${unit}s`} ago`;
 }
 
 function ticketMatches(
