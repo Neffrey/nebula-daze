@@ -7,6 +7,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ChangeEvent, Suspense, useEffect, useRef, useState } from "react";
 import OrderAddress, { type OrderShippingAddress } from "@/components/OrderAddress";
+import ProductCatalog from "@/components/ProductCatalog";
 import ProfileSecurity from "@/components/ProfileSecurity";
 import SiteHeader from "@/components/SiteHeader";
 import { api } from "@/convex/_generated/api";
@@ -22,6 +23,7 @@ const sectionByQuery = {
   orders: "Orders",
   support: "Support",
   tickets: "Tickets",
+  products: "Products",
 } as const;
 
 type SectionQuery = keyof typeof sectionByQuery;
@@ -39,6 +41,9 @@ function sectionQuery(section: Section): SectionQuery {
   if (section === "Tickets") {
     return "tickets";
   }
+  if (section === "Products") {
+    return "products";
+  }
   return "profile";
 }
 
@@ -48,6 +53,9 @@ function visibleSection(value: string | null, role: AccountRole): SectionQuery {
   }
   if (value === "tickets" && hasAbility(role, "support")) {
     return "tickets";
+  }
+  if (value === "products" && hasAbility(role, "admin")) {
+    return "products";
   }
   return "profile";
 }
@@ -112,9 +120,11 @@ function SignedIn({
   const requested = searchParams.get("section");
   const query = visibleSection(requested, role);
   const section = sectionByQuery[query];
-  const items: readonly Section[] = hasAbility(role, "support")
-    ? [...sections, "Tickets"]
-    : sections;
+  const items: readonly Section[] = [
+    ...sections,
+    ...(hasAbility(role, "support") ? (["Tickets"] as const) : []),
+    ...(hasAbility(role, "admin") ? (["Products"] as const) : []),
+  ];
 
   useEffect(() => {
     if (requested === query) {
@@ -159,6 +169,7 @@ function SignedIn({
         {section === "Orders" ? <Orders /> : null}
         {section === "Support" ? <Support /> : null}
         {section === "Tickets" ? <TicketQueue /> : null}
+        {section === "Products" ? <ProductCatalog /> : null}
       </section>
     </div>
   );
