@@ -6,12 +6,13 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { useCart } from "@/components/CartProvider";
 import { api } from "@/convex/_generated/api";
-import { categories, formatPrice, type Product } from "@/lib/catalog";
+import { formatPrice, type Product } from "@/lib/catalog";
 
 export default function Collection() {
   const { add } = useCart();
   const products = useQuery(api.products.list);
-  const [active, setActive] = useState<(typeof categories)[number]>("New");
+  const categories = ["New", ...(useQuery(api.categories.list) ?? [])];
+  const [active, setActive] = useState("New");
   const visible =
     products === undefined
       ? []

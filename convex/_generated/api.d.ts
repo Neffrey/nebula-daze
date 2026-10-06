@@ -9,12 +9,16 @@
  */
 
 import type * as auth from "../auth.js";
+import type * as categories from "../categories.js";
 import type * as checkout from "../checkout.js";
+import type * as colors from "../colors.js";
 import type * as googleAccount from "../googleAccount.js";
 import type * as http from "../http.js";
+import type * as lib_admin from "../lib/admin.js";
 import type * as orders from "../orders.js";
 import type * as products from "../products.js";
 import type * as reviews from "../reviews.js";
+import type * as sizes from "../sizes.js";
 import type * as tickets from "../tickets.js";
 import type * as users from "../users.js";
 
@@ -26,12 +30,16 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   auth: typeof auth;
+  categories: typeof categories;
   checkout: typeof checkout;
+  colors: typeof colors;
   googleAccount: typeof googleAccount;
   http: typeof http;
+  "lib/admin": typeof lib_admin;
   orders: typeof orders;
   products: typeof products;
   reviews: typeof reviews;
+  sizes: typeof sizes;
   tickets: typeof tickets;
   users: typeof users;
 }>;

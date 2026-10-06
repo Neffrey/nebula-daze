@@ -1,29 +1,22 @@
-import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
 import { productSlug, products as catalog } from "../lib/catalog";
-import { hasAbility } from "../lib/roles";
-import type { Id } from "./_generated/dataModel";
+import type { Doc, Id } from "./_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "./_generated/server";
 import { internalMutation, mutation, query } from "./_generated/server";
-
-const productCategory = v.union(
-  v.literal("Tailoring"),
-  v.literal("Evening"),
-  v.literal("Knitwear"),
-  v.literal("Accessories"),
-);
+import { requireAdmin } from "./lib/admin";
 
 const listedProduct = v.object({
   name: v.string(),
   slug: v.string(),
   price: v.number(),
-  category: productCategory,
+  category: v.string(),
   image: v.string(),
   images: v.array(v.string()),
 });
 
 const productDetail = listedProduct.extend({
   _id: v.id("products"),
+  categoryId: v.id("categories"),
 });
 
 export const list = query({
@@ -31,7 +24,8 @@ export const list = query({
   returns: v.array(listedProduct),
   handler: async (ctx) => {
     const products = await ctx.db.query("products").take(40);
-    return products.map((product) => presentProduct(product));
+    const names = await categoryNames(ctx);
+    return products.map((product) => presentProduct(product, names));
   },
 });
 
@@ -41,9 +35,11 @@ export const manageList = query({
   handler: async (ctx) => {
     await requireAdmin(ctx);
     const products = await ctx.db.query("products").withIndex("by_name").take(40);
+    const names = await categoryNames(ctx);
     return products.map((product) => ({
       _id: product._id,
-      ...presentProduct(product),
+      categoryId: product.categoryId,
+      ...presentProduct(product, names),
     }));
   },
 });
@@ -52,7 +48,7 @@ export const create = mutation({
   args: {
     name: v.string(),
     price: v.number(),
-    category: productCategory,
+    categoryId: v.id("categories"),
     images: v.array(v.string()),
   },
   returns: v.id("products"),
@@ -61,12 +57,13 @@ export const create = mutation({
     const name = productName(args.name);
     const slug = productSlug(name);
     await assertSlugAvailable(ctx, slug);
+    await assertCategoryExists(ctx, args.categoryId);
     const images = productImages(args.images);
     return await ctx.db.insert("products", {
       name,
       slug,
       price: productPrice(args.price),
-      category: args.category,
+      categoryId: args.categoryId,
       image: images[0] ?? "",
       images,
     });
@@ -78,7 +75,7 @@ export const update = mutation({
     productId: v.id("products"),
     name: v.string(),
     price: v.number(),
-    category: productCategory,
+    categoryId: v.id("categories"),
     images: v.array(v.string()),
   },
   returns: v.null(),
@@ -91,12 +88,13 @@ export const update = mutation({
     const name = productName(args.name);
     const slug = productSlug(name);
     await assertSlugAvailable(ctx, slug, product._id);
+    await assertCategoryExists(ctx, args.categoryId);
     const images = productImages(args.images);
     await ctx.db.patch("products", product._id, {
       name,
       slug,
       price: productPrice(args.price),
-      category: args.category,
+      categoryId: args.categoryId,
       image: images[0] ?? product.image,
       images,
     });
@@ -115,9 +113,12 @@ export const getBySlug = query({
     if (product === null) {
       return null;
     }
+    const category = await ctx.db.get("categories", product.categoryId);
+    const names = new Map(category === null ? [] : [[category._id, category.name]]);
     return {
       _id: product._id,
-      ...presentProduct(product),
+      categoryId: product.categoryId,
+      ...presentProduct(product, names),
     };
   },
 });
@@ -128,9 +129,7 @@ export const seed = internalMutation({
   handler: async (ctx) => {
     let count = 0;
     for (const item of catalog) {
-      if (!isCategory(item.category)) {
-        continue;
-      }
+      const categoryId = await findOrCreateCategory(ctx, item.category);
       const slug = productSlug(item.name);
       const existing = await ctx.db
         .query("products")
@@ -140,7 +139,7 @@ export const seed = internalMutation({
         name: item.name,
         slug,
         price: item.price,
-        category: item.category,
+        categoryId,
         image: item.image,
         images: [item.image],
       };
@@ -155,14 +154,22 @@ export const seed = internalMutation({
   },
 });
 
-async function requireAdmin(ctx: QueryCtx | MutationCtx) {
-  const userId = await getAuthUserId(ctx);
-  if (userId === null) {
-    throw new Error("Not authenticated");
-  }
-  const user = await ctx.db.get("users", userId);
-  if (user === null || !hasAbility(user.role ?? "user", "admin")) {
-    throw new Error("Unauthorized");
+async function categoryNames(ctx: QueryCtx) {
+  const categories = await ctx.db.query("categories").take(100);
+  return new Map(categories.map((category) => [category._id, category.name]));
+}
+
+async function findOrCreateCategory(ctx: MutationCtx, name: string) {
+  const existing = await ctx.db
+    .query("categories")
+    .withIndex("by_name", (q) => q.eq("name", name))
+    .first();
+  return existing?._id ?? (await ctx.db.insert("categories", { name }));
+}
+
+async function assertCategoryExists(ctx: MutationCtx, categoryId: Id<"categories">) {
+  if ((await ctx.db.get("categories", categoryId)) === null) {
+    throw new Error("Choose a category");
   }
 }
 
@@ -199,21 +206,14 @@ function productPrice(value: number) {
 
 const maxProductImages = 8;
 
-function presentProduct(product: {
-  name: string;
-  slug: string;
-  price: number;
-  category: "Tailoring" | "Evening" | "Knitwear" | "Accessories";
-  image: string;
-  images?: string[];
-}) {
+function presentProduct(product: Doc<"products">, categoryNames: Map<Id<"categories">, string>) {
   const images =
     product.images !== undefined && product.images.length > 0 ? product.images : [product.image];
   return {
     name: product.name,
     slug: product.slug,
     price: product.price,
-    category: product.category,
+    category: categoryNames.get(product.categoryId) ?? "",
     image: images[0] ?? product.image,
     images,
   };
@@ -245,15 +245,4 @@ function productImage(value: string) {
     throw new Error("Use an image link");
   }
   return url.toString();
-}
-
-function isCategory(
-  category: string,
-): category is "Tailoring" | "Evening" | "Knitwear" | "Accessories" {
-  return (
-    category === "Tailoring" ||
-    category === "Evening" ||
-    category === "Knitwear" ||
-    category === "Accessories"
-  );
 }

@@ -99,17 +99,27 @@ export default defineSchema({
     name: v.string(),
     slug: v.string(),
     price: v.number(),
-    category: v.union(
-      v.literal("Tailoring"),
-      v.literal("Evening"),
-      v.literal("Knitwear"),
-      v.literal("Accessories"),
-    ),
+    categoryId: v.id("categories"),
     image: v.string(),
     images: v.optional(v.array(v.string())),
   })
     .index("by_slug", ["slug"])
-    .index("by_name", ["name"]),
+    .index("by_name", ["name"])
+    .index("by_categoryId", ["categoryId"]),
+  categories: defineTable({
+    name: v.string(),
+    parentId: v.optional(v.id("categories")),
+  })
+    .index("by_name", ["name"])
+    .index("by_parentId", ["parentId"]),
+  colors: defineTable({
+    name: v.string(),
+    hex: v.string(),
+    hex2: v.optional(v.string()),
+  }).index("by_name", ["name"]),
+  sizes: defineTable({
+    name: v.string(),
+  }).index("by_name", ["name"]),
   reviews: defineTable({
     productId: v.id("products"),
     userId: v.id("users"),

@@ -5,14 +5,6 @@ export type Product = {
   image: string;
 };
 
-export const categories = [
-  "New",
-  "Tailoring",
-  "Evening",
-  "Knitwear",
-  "Accessories",
-] as const;
-
 export const products: Product[] = [
   {
     name: "Double-breasted wool coat",

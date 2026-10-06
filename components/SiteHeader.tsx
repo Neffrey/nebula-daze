@@ -1,14 +1,16 @@
 "use client";
 
-import { useConvexAuth } from "convex/react";
+import { useConvexAuth, useQuery } from "convex/react";
 import Link from "next/link";
 import { useState } from "react";
 import { useCart } from "@/components/CartProvider";
-import { categories, formatPrice } from "@/lib/catalog";
+import { api } from "@/convex/_generated/api";
+import { formatPrice } from "@/lib/catalog";
 
 export default function SiteHeader() {
   const { lines, count, remove } = useCart();
   const { isAuthenticated, isLoading } = useConvexAuth();
+  const categories = ["New", ...(useQuery(api.categories.list) ?? [])];
   const [menuOpen, setMenuOpen] = useState(false);
   const [bagOpen, setBagOpen] = useState(false);
   const subtotal = lines.reduce(

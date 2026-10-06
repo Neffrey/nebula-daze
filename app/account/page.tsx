@@ -6,9 +6,11 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ChangeEvent, Suspense, useEffect, useRef, useState } from "react";
+import { CategoryManager, ColorManager, SizeManager } from "@/components/CatalogOptions";
 import OrderAddress, { type OrderShippingAddress } from "@/components/OrderAddress";
 import ProductCatalog from "@/components/ProductCatalog";
 import ProfileSecurity from "@/components/ProfileSecurity";
+import Select from "@/components/Select";
 import SiteHeader from "@/components/SiteHeader";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
@@ -169,7 +171,7 @@ function SignedIn({
         {section === "Orders" ? <Orders /> : null}
         {section === "Support" ? <Support /> : null}
         {section === "Tickets" ? <TicketQueue /> : null}
-        {section === "Products" ? <ProductCatalog /> : null}
+        {section === "Products" ? <ProductAdmin /> : null}
       </section>
     </div>
   );
@@ -397,6 +399,24 @@ function TicketQueue() {
   );
 }
 
+const productViews = ["Products", "Categories", "Colors", "Sizes"] as const;
+
+type ProductView = (typeof productViews)[number];
+
+function ProductAdmin() {
+  const [view, setView] = useState<ProductView>("Products");
+
+  return (
+    <div className="mt-8">
+      <SectionTabs label="Products" items={productViews} view={view} onView={setView} />
+      {view === "Products" ? <ProductCatalog /> : null}
+      {view === "Categories" ? <CategoryManager /> : null}
+      {view === "Colors" ? <ColorManager /> : null}
+      {view === "Sizes" ? <SizeManager /> : null}
+    </div>
+  );
+}
+
 function TicketSearch({
   id,
   value,
@@ -511,24 +531,20 @@ function NewTicket() {
       <label className="block text-sm" htmlFor="ticket-order">
         is this about a recent order
       </label>
-      <select
+      <Select<Id<"orders"> | "none">
         id="ticket-order"
-        className={`${ticketFieldClass} mt-3`}
-        value={orderId}
+        className="mt-3"
+        value={orderId === "" ? "none" : orderId}
         disabled={recent === undefined || saving}
-        onChange={(event) => {
-          const match = recent?.find((order) => order._id === event.target.value);
+        options={[
+          { value: "none", label: "no" },
+          ...(recent ?? []).map((order) => ({ value: order._id, label: orderChoice(order) })),
+        ]}
+        onChange={(choice) => {
           setSent(false);
-          setOrderId(match?._id ?? "");
+          setOrderId(choice === "none" ? "" : choice);
         }}
-      >
-        <option value="">no</option>
-        {recent?.map((order) => (
-          <option key={order._id} value={order._id}>
-            {orderChoice(order)}
-          </option>
-        ))}
-      </select>
+      />
       <label className="mt-8 block text-sm" htmlFor="ticket-message">
         how can we help you?
       </label>

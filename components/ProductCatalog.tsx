@@ -2,26 +2,23 @@
 
 import { useMutation, useQuery } from "convex/react";
 import { ChangeEvent, FormEvent, useRef, useState } from "react";
+import Select from "@/components/Select";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { formatPrice } from "@/lib/catalog";
 import { uploadFiles } from "@/lib/uploadthing";
 
-const categories = ["Tailoring", "Evening", "Knitwear", "Accessories"] as const;
-
-type Category = (typeof categories)[number];
-
 type ProductDraft = {
   name: string;
   price: string;
-  category: Category;
+  categoryId: Id<"categories"> | "";
   images: string[];
 };
 
 const emptyDraft: ProductDraft = {
   name: "",
   price: "",
-  category: "Tailoring",
+  categoryId: "",
   images: [],
 };
 
@@ -60,7 +57,7 @@ export default function ProductCatalog() {
                   initial={{
                     name: product.name,
                     price: String(product.price),
-                    category: product.category,
+                    categoryId: product.categoryId,
                     images: product.images,
                   }}
                   submitLabel="Save product"
@@ -114,11 +111,12 @@ function ProductForm({
   onSubmit: (draft: {
     name: string;
     price: number;
-    category: Category;
+    categoryId: Id<"categories">;
     images: string[];
   }) => Promise<void>;
 }) {
   const update = useMutation(api.products.update);
+  const categories = useQuery(api.categories.manageList);
   const fileInput = useRef<HTMLInputElement>(null);
   const [draft, setDraft] = useState(initial);
   const [imageUrl, setImageUrl] = useState("");
@@ -192,6 +190,11 @@ function ProductForm({
       return;
     }
     const price = Number(draft.price);
+    const categoryId = draft.categoryId;
+    if (categoryId === "") {
+      setError("Choose a category");
+      return;
+    }
     setSaving(true);
     setError(null);
     void (async () => {
@@ -199,7 +202,7 @@ function ProductForm({
         await onSubmit({
           name: draft.name,
           price,
-          category: draft.category,
+          categoryId,
           images: draft.images,
         });
         setDraft(emptyDraft);
@@ -210,13 +213,13 @@ function ProductForm({
         productId,
         name: draft.name,
         price,
-        category: draft.category,
+        categoryId,
         images: draft.images,
       });
       await onSubmit({
         name: draft.name,
         price,
-        category: draft.category,
+        categoryId,
         images: draft.images,
       });
     })().catch((submitError: unknown) => {
@@ -247,23 +250,21 @@ function ProductForm({
           className="mt-2 block w-full border border-foreground/20 bg-transparent px-3 py-2 text-sm tracking-normal"
         />
       </label>
-      <label className="text-[11px] tracking-[0.16em] uppercase" htmlFor={`${idPrefix}-category`}>
-        Category
-        <select
+      <div>
+        <label className="text-[11px] tracking-[0.16em] uppercase" htmlFor={`${idPrefix}-category`}>
+          Category
+        </label>
+        <Select
           id={`${idPrefix}-category`}
-          value={draft.category}
-          onChange={(event) =>
-            setDraft((current) => ({ ...current, category: event.target.value as Category }))
-          }
-          className="mt-2 block w-full border border-foreground/20 bg-transparent px-3 py-2 text-sm tracking-normal normal-case"
-        >
-          {categories.map((category) => (
-            <option key={category} value={category}>
-              {category}
-            </option>
-          ))}
-        </select>
-      </label>
+          className="mt-2"
+          compact
+          value={draft.categoryId}
+          placeholder="Choose a category"
+          disabled={categories === undefined}
+          options={(categories ?? []).map((category) => ({ value: category._id, label: category.name }))}
+          onChange={(categoryId) => setDraft((current) => ({ ...current, categoryId }))}
+        />
+      </div>
       <div>
         <label className="text-[11px] tracking-[0.16em] uppercase" htmlFor={`${idPrefix}-image`}>
           Images
