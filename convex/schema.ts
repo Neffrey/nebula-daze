@@ -100,6 +100,15 @@ export default defineSchema({
     slug: v.string(),
     price: v.number(),
     categoryId: v.id("categories"),
+    variants: v.optional(
+      v.array(
+        v.object({
+          colorId: v.id("colors"),
+          sizeIds: v.array(v.id("sizes")),
+        }),
+      ),
+    ),
+    sizeIds: v.optional(v.array(v.id("sizes"))),
     image: v.string(),
     images: v.optional(v.array(v.string())),
   })

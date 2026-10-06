@@ -3,15 +3,24 @@
 import { useMutation, useQuery } from "convex/react";
 import { ChangeEvent, FormEvent, useRef, useState } from "react";
 import Select from "@/components/Select";
+import Swatch from "@/components/Swatch";
+import ToggleGroup from "@/components/ToggleGroup";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { formatPrice } from "@/lib/catalog";
 import { uploadFiles } from "@/lib/uploadthing";
 
+type Variant = {
+  colorId: Id<"colors">;
+  sizeIds: Id<"sizes">[];
+};
+
 type ProductDraft = {
   name: string;
   price: string;
   categoryId: Id<"categories"> | "";
+  variants: Variant[];
+  sizeIds: Id<"sizes">[];
   images: string[];
 };
 
@@ -19,6 +28,8 @@ const emptyDraft: ProductDraft = {
   name: "",
   price: "",
   categoryId: "",
+  variants: [],
+  sizeIds: [],
   images: [],
 };
 
@@ -58,6 +69,8 @@ export default function ProductCatalog() {
                     name: product.name,
                     price: String(product.price),
                     categoryId: product.categoryId,
+                    variants: product.variants,
+                    sizeIds: product.sizeIds,
                     images: product.images,
                   }}
                   submitLabel="Save product"
@@ -112,11 +125,16 @@ function ProductForm({
     name: string;
     price: number;
     categoryId: Id<"categories">;
+    variants: Variant[];
+    sizeIds: Id<"sizes">[];
     images: string[];
   }) => Promise<void>;
 }) {
   const update = useMutation(api.products.update);
   const categories = useQuery(api.categories.manageList);
+  const colors = useQuery(api.colors.manageList);
+  const sizes = useQuery(api.sizes.manageList);
+  const sizeOptions = (sizes ?? []).map((size) => ({ value: size._id, label: size.name }));
   const fileInput = useRef<HTMLInputElement>(null);
   const [draft, setDraft] = useState(initial);
   const [imageUrl, setImageUrl] = useState("");
@@ -195,33 +213,25 @@ function ProductForm({
       setError("Choose a category");
       return;
     }
+    const values = {
+      name: draft.name,
+      price,
+      categoryId,
+      variants: draft.variants,
+      sizeIds: draft.variants.length > 0 ? [] : draft.sizeIds,
+      images: draft.images,
+    };
     setSaving(true);
     setError(null);
     void (async () => {
       if (productId === undefined) {
-        await onSubmit({
-          name: draft.name,
-          price,
-          categoryId,
-          images: draft.images,
-        });
+        await onSubmit(values);
         setDraft(emptyDraft);
         setImageUrl("");
         return;
       }
-      await update({
-        productId,
-        name: draft.name,
-        price,
-        categoryId,
-        images: draft.images,
-      });
-      await onSubmit({
-        name: draft.name,
-        price,
-        categoryId,
-        images: draft.images,
-      });
+      await update({ productId, ...values });
+      await onSubmit(values);
     })().catch((submitError: unknown) => {
       setError(submitError instanceof Error ? submitError.message : "Unable to save the product");
     }).finally(() => {
@@ -265,6 +275,59 @@ function ProductForm({
           onChange={(categoryId) => setDraft((current) => ({ ...current, categoryId }))}
         />
       </div>
+      <ToggleGroup
+        label="Colors"
+        empty="Add colors in the Colors tab"
+        options={(colors ?? []).map((color) => ({
+          value: color._id,
+          label: color.name,
+          swatch: <Swatch hex={color.hex} hex2={color.hex2} className="size-4" />,
+        }))}
+        selected={draft.variants.map((variant) => variant.colorId)}
+        onChange={(colorIds) =>
+          setDraft((current) => ({
+            ...current,
+            variants: colorIds.map(
+              (colorId) =>
+                current.variants.find((variant) => variant.colorId === colorId) ?? {
+                  colorId,
+                  sizeIds: current.variants.length === 0 ? current.sizeIds : [],
+                },
+            ),
+          }))
+        }
+      />
+      {draft.variants.length === 0 ? (
+        <ToggleGroup
+          label="Sizes"
+          empty="Add sizes in the Sizes tab"
+          options={sizeOptions}
+          selected={draft.sizeIds}
+          onChange={(sizeIds) => setDraft((current) => ({ ...current, sizeIds }))}
+        />
+      ) : (
+        draft.variants.map((variant) => {
+          const color = colors?.find((candidate) => candidate._id === variant.colorId);
+          return (
+            <div key={variant.colorId} className="border-l border-foreground/20 pl-4">
+              <ToggleGroup
+                label={`Sizes in ${color?.name ?? "this color"}`}
+                empty="Add sizes in the Sizes tab"
+                options={sizeOptions}
+                selected={variant.sizeIds}
+                onChange={(sizeIds) =>
+                  setDraft((current) => ({
+                    ...current,
+                    variants: current.variants.map((entry) =>
+                      entry.colorId === variant.colorId ? { ...entry, sizeIds } : entry,
+                    ),
+                  }))
+                }
+              />
+            </div>
+          );
+        })
+      )}
       <div>
         <label className="text-[11px] tracking-[0.16em] uppercase" htmlFor={`${idPrefix}-image`}>
           Images

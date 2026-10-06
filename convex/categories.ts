@@ -19,6 +19,15 @@ export const list = query({
   },
 });
 
+export const options = query({
+  args: {},
+  returns: v.array(category),
+  handler: async (ctx) => {
+    const rows = await ctx.db.query("categories").take(100);
+    return rows.map((row) => ({ _id: row._id, name: row.name, parentId: row.parentId }));
+  },
+});
+
 export const manageList = query({
   args: {},
   returns: v.array(category),

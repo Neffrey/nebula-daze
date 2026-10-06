@@ -9,6 +9,15 @@ const size = v.object({
   name: v.string(),
 });
 
+export const list = query({
+  args: {},
+  returns: v.array(size),
+  handler: async (ctx) => {
+    const rows = await ctx.db.query("sizes").take(100);
+    return rows.map((row) => ({ _id: row._id, name: row.name }));
+  },
+});
+
 export const manageList = query({
   args: {},
   returns: v.array(size),

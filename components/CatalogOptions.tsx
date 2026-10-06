@@ -3,6 +3,7 @@
 import { useMutation, useQuery } from "convex/react";
 import { FormEvent, useState } from "react";
 import Select from "@/components/Select";
+import Swatch from "@/components/Swatch";
 import { api } from "@/convex/_generated/api";
 
 type OptionDraft<TId extends string> = {
@@ -391,19 +392,6 @@ function OptionForm<TId extends string>({
         ) : null}
       </div>
     </form>
-  );
-}
-
-function Swatch({ hex, hex2 }: { hex: string; hex2?: string }) {
-  return (
-    <span
-      aria-hidden="true"
-      className="size-8 shrink-0 border border-foreground/20"
-      style={{
-        background:
-          hex2 === undefined ? hex : `linear-gradient(to bottom right, ${hex} 50%, ${hex2} 50%)`,
-      }}
-    />
   );
 }
 

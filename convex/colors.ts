@@ -11,6 +11,15 @@ const color = v.object({
   hex2: v.optional(v.string()),
 });
 
+export const list = query({
+  args: {},
+  returns: v.array(color),
+  handler: async (ctx) => {
+    const rows = await ctx.db.query("colors").withIndex("by_name").take(100);
+    return rows.map((row) => ({ _id: row._id, name: row.name, hex: row.hex, hex2: row.hex2 }));
+  },
+});
+
 export const manageList = query({
   args: {},
   returns: v.array(color),

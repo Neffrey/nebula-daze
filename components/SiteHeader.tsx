@@ -10,7 +10,10 @@ import { formatPrice } from "@/lib/catalog";
 export default function SiteHeader() {
   const { lines, count, remove } = useCart();
   const { isAuthenticated, isLoading } = useConvexAuth();
-  const categories = ["New", ...(useQuery(api.categories.list) ?? [])];
+  const topLevel = (useQuery(api.categories.options) ?? []).filter(
+    (category) => category.parentId === undefined,
+  );
+  const categories = ["New", ...topLevel.map((category) => category.name)];
   const [menuOpen, setMenuOpen] = useState(false);
   const [bagOpen, setBagOpen] = useState(false);
   const subtotal = lines.reduce(
@@ -33,6 +36,9 @@ export default function SiteHeader() {
             Menu
           </button>
           <nav className="hidden items-center gap-5 lg:flex">
+            <Link href="/products" className="text-[11px] tracking-[0.16em] uppercase">
+              Shop all
+            </Link>
             {categories.map((category) => (
               <a
                 key={category}
@@ -75,6 +81,9 @@ export default function SiteHeader() {
             </button>
           </div>
           <nav className="flex flex-col gap-6 px-6 pt-10">
+            <Link href="/products" className="font-display text-4xl" onClick={() => setMenuOpen(false)}>
+              Shop all
+            </Link>
             {categories.map((category) => (
               <a
                 key={category}

@@ -16,6 +16,7 @@ import {
 } from "react";
 import { useCart } from "@/components/CartProvider";
 import SiteHeader from "@/components/SiteHeader";
+import Swatch from "@/components/Swatch";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { formatPrice } from "@/lib/catalog";
@@ -73,6 +74,7 @@ export default function ProductPage() {
                   to be worn past midnight and again the next morning.
                 </p>
                 <p className="mt-8 text-sm">{formatPrice(product.price)}</p>
+                <ProductOptions key={product.slug} colors={product.colors} sizes={product.sizes} />
                 <div className="mt-6 max-w-sm">
                   <AddToCart product={product} />
                 </div>
@@ -146,6 +148,99 @@ function ProductGallery({ name, images }: { name: string; images: string[] }) {
             </li>
           ))}
         </ul>
+      ) : null}
+    </div>
+  );
+}
+
+type ProductColor = {
+  _id: Id<"colors">;
+  name: string;
+  hex: string;
+  hex2?: string;
+  sizeIds: Id<"sizes">[];
+};
+
+function ProductOptions({
+  colors,
+  sizes,
+}: {
+  colors: ProductColor[];
+  sizes: { _id: Id<"sizes">; name: string }[];
+}) {
+  const [colorId, setColorId] = useState<Id<"colors"> | null>(colors[0]?._id ?? null);
+  const [sizeId, setSizeId] = useState<Id<"sizes"> | null>(null);
+  const color = colors.find((entry) => entry._id === colorId) ?? null;
+  const available = new Set(color === null ? sizes.map((size) => size._id) : color.sizeIds);
+  const size = sizes.find((entry) => entry._id === sizeId) ?? null;
+
+  if (colors.length === 0 && sizes.length === 0) {
+    return null;
+  }
+
+  function chooseColor(next: ProductColor) {
+    setColorId(next._id);
+    if (sizeId !== null && !next.sizeIds.includes(sizeId)) {
+      setSizeId(null);
+    }
+  }
+
+  return (
+    <div className="mt-6 max-w-sm space-y-5">
+      {colors.length > 0 ? (
+        <fieldset>
+          <legend className="text-[11px] tracking-[0.16em] uppercase">
+            Color{color === null ? "" : <span className="text-muted"> · {color.name}</span>}
+          </legend>
+          <div className="mt-2 flex flex-wrap gap-2">
+            {colors.map((entry) => (
+              <button
+                key={entry._id}
+                type="button"
+                aria-label={entry.name}
+                aria-pressed={entry._id === colorId}
+                title={entry.name}
+                onClick={() => chooseColor(entry)}
+                className={`border p-0.5 ${
+                  entry._id === colorId ? "border-foreground" : "border-transparent"
+                }`}
+              >
+                <Swatch hex={entry.hex} hex2={entry.hex2} />
+              </button>
+            ))}
+          </div>
+        </fieldset>
+      ) : null}
+      {sizes.length > 0 ? (
+        <fieldset>
+          <legend className="text-[11px] tracking-[0.16em] uppercase">
+            Size{size === null ? "" : <span className="text-muted"> · {size.name}</span>}
+          </legend>
+          <div className="mt-2 flex flex-wrap gap-2">
+            {sizes.map((entry) => {
+              const inStock = available.has(entry._id);
+              return (
+                <button
+                  key={entry._id}
+                  type="button"
+                  aria-pressed={entry._id === sizeId}
+                  disabled={!inStock}
+                  title={
+                    inStock || color === null ? entry.name : `${entry.name} is not offered in ${color.name}`
+                  }
+                  onClick={() => setSizeId(entry._id)}
+                  className={`min-w-11 border px-3 py-2 text-[11px] tracking-[0.12em] uppercase disabled:cursor-not-allowed disabled:text-muted disabled:line-through disabled:opacity-50 ${
+                    entry._id === sizeId
+                      ? "border-foreground bg-foreground text-background"
+                      : "border-foreground/20"
+                  }`}
+                >
+                  {entry.name}
+                </button>
+              );
+            })}
+          </div>
+        </fieldset>
       ) : null}
     </div>
   );
