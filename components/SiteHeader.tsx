@@ -1,5 +1,6 @@
 "use client";
 
+import { useConvexAuth } from "convex/react";
 import Link from "next/link";
 import { useState } from "react";
 import { useCart } from "@/components/CartProvider";
@@ -7,6 +8,7 @@ import { categories, formatPrice } from "@/lib/catalog";
 
 export default function SiteHeader() {
   const { lines, count, remove } = useCart();
+  const { isAuthenticated, isLoading } = useConvexAuth();
   const [menuOpen, setMenuOpen] = useState(false);
   const [bagOpen, setBagOpen] = useState(false);
   const subtotal = lines.reduce(
@@ -46,7 +48,11 @@ export default function SiteHeader() {
             NAREL
           </Link>
           <div className="flex items-center gap-5 text-[11px] tracking-[0.16em] uppercase">
-            <Link href="/account">Account</Link>
+            {isLoading ? null : isAuthenticated ? (
+              <Link href="/account">Account</Link>
+            ) : (
+              <Link href="/signin">Sign in</Link>
+            )}
             <button type="button" onClick={() => setBagOpen(true)}>
               Bag ({count})
             </button>
