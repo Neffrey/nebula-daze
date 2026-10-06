@@ -1,25 +1,22 @@
 import type { Metadata } from "next";
-import { Cormorant_Garamond, Geist } from "next/font/google";
+import { Geist, Unbounded } from "next/font/google";
 import "./globals.css";
 import { ConvexAuthNextjsServerProvider } from "@convex-dev/auth/nextjs/server";
 import CartProvider from "@/components/CartProvider";
 import ConvexClientProvider from "@/components/ConvexClientProvider";
-import ThemeSync from "@/components/ThemeSync";
-import { themeBootScript } from "@/lib/theme";
-
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
 });
 
-const display = Cormorant_Garamond({
+const display = Unbounded({
   variable: "--font-display",
   subsets: ["latin"],
-  weight: ["400", "500", "600"],
+  weight: ["300", "400", "500"],
 });
 
 export const metadata: Metadata = {
-  title: "Narel",
+  title: "Nebula Daze",
   description: "Tailoring, silk, and outerwear from the evening collection.",
 };
 
@@ -30,15 +27,11 @@ export default function RootLayout({
 }>) {
   return (
     <ConvexAuthNextjsServerProvider>
-      <html lang="en" suppressHydrationWarning>
-        <head>
-          <script dangerouslySetInnerHTML={{ __html: themeBootScript }} />
-        </head>
+      <html lang="en">
         <body
           className={`${geistSans.variable} ${display.variable} antialiased`}
         >
           <ConvexClientProvider>
-            <ThemeSync />
             <CartProvider>{children}</CartProvider>
           </ConvexClientProvider>
         </body>

@@ -109,7 +109,7 @@ export default function Select<T extends string>({
         disabled={disabled}
         onClick={() => (open ? setOpen(false) : show())}
         onKeyDown={onKeyDown}
-        className={`flex w-full items-center justify-between gap-3 border border-foreground/20 px-3 text-left ${
+        className={`flex w-full items-center justify-between gap-3 border border-foreground/40 px-3 text-left ${
           compact ? "bg-transparent py-2" : "bg-background py-3"
         } text-sm tracking-normal normal-case outline-none focus-visible:border-foreground disabled:opacity-50`}
       >
@@ -129,7 +129,7 @@ export default function Select<T extends string>({
           ref={list}
           id={listId}
           role="listbox"
-          className="absolute top-full right-0 left-0 z-20 -mt-px max-h-64 overflow-y-auto border border-foreground/20 bg-background py-1"
+          className="absolute top-full right-0 left-0 z-20 -mt-px max-h-64 overflow-y-auto border border-foreground/40 bg-background py-1"
         >
           {options.map((option, index) => {
             const isSelected = option.value === value;
@@ -143,7 +143,7 @@ export default function Select<T extends string>({
                 onPointerDown={(event) => event.preventDefault()}
                 onClick={() => choose(index)}
                 className={`flex cursor-pointer items-center justify-between gap-3 px-3 py-2 text-sm tracking-normal normal-case ${
-                  index === active ? "bg-foreground/5" : ""
+                  index === active ? "bg-primary text-on-primary" : ""
                 }`}
               >
                 <span className="truncate">{option.label}</span>

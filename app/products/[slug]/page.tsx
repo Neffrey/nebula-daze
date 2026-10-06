@@ -13,6 +13,7 @@ import {
   useEffect,
   useRef,
   useState,
+  useSyncExternalStore,
 } from "react";
 import AddToCartButton, { QuickAdd } from "@/components/AddToCartButton";
 import SiteHeader from "@/components/SiteHeader";
@@ -38,14 +39,14 @@ export default function ProductPage() {
             <h1 className="font-display text-5xl">This piece is unavailable.</h1>
             <Link
               href="/#new"
-              className="mt-8 inline-block text-[11px] tracking-[0.18em] uppercase underline underline-offset-4"
+              className="mt-8 inline-block text-[12px] tracking-[0.18em] uppercase underline underline-offset-4"
             >
               New arrivals
             </Link>
           </div>
         ) : (
           <ReviewEditProvider>
-            <nav aria-label="Breadcrumb" className="text-[11px] tracking-[0.16em] uppercase">
+            <nav aria-label="Breadcrumb" className="text-[12px] tracking-[0.16em] uppercase">
               <Link href="/#new" className="underline underline-offset-4">
                 New arrivals
               </Link>
@@ -138,7 +139,7 @@ function ProductGallery({ name, images }: { name: string; images: string[] }) {
               type="button"
               aria-label="Previous image"
               onClick={() => show(index - 1)}
-              className="absolute top-1/2 left-3 flex size-9 -translate-y-1/2 items-center justify-center border border-foreground/20 bg-background/80 text-lg"
+              className="absolute top-1/2 left-3 flex size-9 -translate-y-1/2 items-center justify-center border border-foreground/40 bg-background/80 text-lg"
             >
               ‹
             </button>
@@ -146,7 +147,7 @@ function ProductGallery({ name, images }: { name: string; images: string[] }) {
               type="button"
               aria-label="Next image"
               onClick={() => show(index + 1)}
-              className="absolute top-1/2 right-3 flex size-9 -translate-y-1/2 items-center justify-center border border-foreground/20 bg-background/80 text-lg"
+              className="absolute top-1/2 right-3 flex size-9 -translate-y-1/2 items-center justify-center border border-foreground/40 bg-background/80 text-lg"
             >
               ›
             </button>
@@ -238,7 +239,7 @@ function ProductPurchase({
     <div className="mt-6 max-w-sm space-y-5">
       {colors.length > 0 ? (
         <fieldset>
-          <legend className="text-[11px] tracking-[0.16em] uppercase">
+          <legend className="text-[12px] tracking-[0.16em] uppercase">
             Color{color === null ? "" : <span className="text-muted"> · {color.name}</span>}
           </legend>
           <div className="mt-2 flex flex-wrap gap-2">
@@ -262,7 +263,7 @@ function ProductPurchase({
       ) : null}
       {sizes.length > 0 ? (
         <fieldset>
-          <legend className="text-[11px] tracking-[0.16em] uppercase">
+          <legend className="text-[12px] tracking-[0.16em] uppercase">
             Size{size === null ? "" : <span className="text-muted"> · {size.name}</span>}
           </legend>
           <div className="mt-2 flex flex-wrap gap-2">
@@ -278,10 +279,10 @@ function ProductPurchase({
                     inStock || color === null ? entry.name : `${entry.name} is not offered in ${color.name}`
                   }
                   onClick={() => setSizeId(entry._id)}
-                  className={`min-w-11 border px-3 py-2 text-[11px] tracking-[0.12em] uppercase disabled:cursor-not-allowed disabled:text-muted disabled:line-through disabled:opacity-50 ${
+                  className={`min-w-11 border px-3 py-2 text-[12px] tracking-[0.12em] uppercase disabled:cursor-not-allowed disabled:text-muted disabled:line-through disabled:opacity-50 ${
                     entry._id === sizeId
-                      ? "border-foreground bg-foreground text-background"
-                      : "border-foreground/20"
+                      ? "border-primary bg-primary text-on-primary"
+                      : "border-foreground/40"
                   }`}
                 >
                   {entry.name}
@@ -333,7 +334,7 @@ function PairWith({ currentSlug }: { currentSlug: string }) {
 
   return (
     <section className="mt-20 border-t border-foreground/10 pt-12">
-      <h2 className="text-[11px] tracking-[0.22em] uppercase">Pair it with</h2>
+      <h2 className="text-[12px] tracking-[0.22em] uppercase">Pair it with</h2>
       <ul className="mt-8 grid gap-8 sm:grid-cols-3">
         {others.map((product) => (
           <li key={product.slug}>
@@ -353,7 +354,7 @@ function PairWith({ currentSlug }: { currentSlug: string }) {
             <div className="mt-3 grid grid-cols-2 gap-2">
               <Link
                 href={`/products/${product.slug}`}
-                className="border border-foreground/20 px-2 py-2 text-center text-[10px] tracking-[0.12em] uppercase"
+                className="border border-foreground/40 px-2 py-2 text-center text-[11px] tracking-[0.12em] uppercase"
               >
                 View item
               </Link>
@@ -439,7 +440,7 @@ function ProductRating({ productId }: { productId: Id<"products"> }) {
         {mine === undefined ? (
           <a
             href="#reviews"
-            className="border border-foreground/20 px-3 py-2 text-[10px] tracking-[0.12em] uppercase"
+            className="border border-foreground/40 px-3 py-2 text-[11px] tracking-[0.12em] uppercase"
           >
             Write a review
           </a>
@@ -447,7 +448,7 @@ function ProductRating({ productId }: { productId: Id<"products"> }) {
           <button
             type="button"
             onClick={() => requestEdit(mine._id)}
-            className="border border-foreground/20 px-3 py-2 text-[10px] tracking-[0.12em] uppercase"
+            className="border border-foreground/40 px-3 py-2 text-[11px] tracking-[0.12em] uppercase"
           >
             Edit review
           </button>
@@ -464,7 +465,7 @@ function ProductRating({ productId }: { productId: Id<"products"> }) {
           />
           <a
             href="#reviews"
-            className="mt-4 inline-block text-[11px] tracking-[0.16em] uppercase underline underline-offset-4"
+            className="mt-4 inline-block text-[12px] tracking-[0.16em] uppercase underline underline-offset-4"
           >
             Read {reviewCountLabel(reviews.length)}
           </a>
@@ -478,20 +479,21 @@ function ProductReviews({ productId }: { productId: Id<"products"> }) {
   const reviews = useProductReviews(productId);
   const { editingId } = useContext(ReviewEditContext);
   const [stars, setStars] = useState<number | null>(null);
+  const [previousEditingId, setPreviousEditingId] = useState(editingId);
+  if (editingId !== previousEditingId) {
+    setPreviousEditingId(editingId);
+    if (editingId !== null) {
+      setStars(null);
+    }
+  }
   const shown =
     reviews === undefined || stars === null
       ? reviews
       : reviews.filter((review) => review.rating === stars);
 
-  useEffect(() => {
-    if (editingId !== null) {
-      setStars(null);
-    }
-  }, [editingId]);
-
   return (
     <section id="reviews" className="mt-20 border-t border-foreground/10 pt-12">
-      <h2 className="text-[11px] tracking-[0.22em] uppercase">Reviews</h2>
+      <h2 className="text-[12px] tracking-[0.22em] uppercase">Reviews</h2>
       {reviews === undefined || shown === undefined ? (
         <p className="mt-8 text-sm text-muted">Loading</p>
       ) : (
@@ -562,7 +564,7 @@ function RatingBars({
                 {star} {star === 1 ? "star" : "stars"}
               </span>
               <span className="h-1.5 bg-foreground/10">
-                <span className="block h-full bg-foreground" style={{ width: `${width}%` }} />
+                <span className="block h-full bg-primary" style={{ width: `${width}%` }} />
               </span>
               <span className="text-right text-foreground">{count}</span>
             </button>
@@ -631,14 +633,14 @@ function ReviewCard({ review }: { review: ListedReview }) {
                         setRemoving(false);
                       });
                   }}
-                  className="border border-foreground/20 px-2 py-1 text-[10px] tracking-[0.12em] uppercase"
+                  className="border border-foreground/40 px-2 py-1 text-[11px] tracking-[0.12em] uppercase"
                 >
                   {removing ? "Deleting" : "Delete"}
                 </button>
                 <button
                   type="button"
                   onClick={() => setConfirming(false)}
-                  className="text-[10px] tracking-[0.12em] uppercase underline underline-offset-4"
+                  className="text-[11px] tracking-[0.12em] uppercase underline underline-offset-4"
                 >
                   Cancel
                 </button>
@@ -651,14 +653,14 @@ function ReviewCard({ review }: { review: ListedReview }) {
                     setError(null);
                     requestEdit(review._id);
                   }}
-                  className="border border-foreground/20 px-2 py-1 text-[10px] tracking-[0.12em] uppercase"
+                  className="border border-foreground/40 px-2 py-1 text-[11px] tracking-[0.12em] uppercase"
                 >
                   Edit
                 </button>
                 <button
                   type="button"
                   onClick={() => setConfirming(true)}
-                  className="border border-foreground/20 px-2 py-1 text-[10px] tracking-[0.12em] uppercase"
+                  className="border border-foreground/40 px-2 py-1 text-[11px] tracking-[0.12em] uppercase"
                 >
                   Delete
                 </button>
@@ -812,7 +814,7 @@ function ReviewEditor({
   return (
     <form onSubmit={submit}>
       <fieldset>
-        <legend className="text-[11px] tracking-[0.16em] uppercase">{legend}</legend>
+        <legend className="text-[12px] tracking-[0.16em] uppercase">{legend}</legend>
         <div className="mt-2 flex gap-1">
           {([1, 2, 3, 4, 5] as const).map((star) => (
             <button
@@ -825,14 +827,14 @@ function ReviewEditor({
             >
               <StarIcon
                 className={`size-6 ${
-                  rating !== null && star <= rating ? "fill-foreground" : "fill-foreground/20"
+                  rating !== null && star <= rating ? "fill-highlight" : "fill-foreground/35"
                 }`}
               />
             </button>
           ))}
         </div>
       </fieldset>
-      <label className="mt-5 block text-[11px] tracking-[0.16em] uppercase" htmlFor={id}>
+      <label className="mt-5 block text-[12px] tracking-[0.16em] uppercase" htmlFor={id}>
         Your review
       </label>
       <textarea
@@ -841,14 +843,14 @@ function ReviewEditor({
         onChange={(event) => setText(event.target.value)}
         rows={4}
         maxLength={2000}
-        className="mt-2 w-full border border-foreground/20 bg-transparent px-3 py-2 text-sm"
+        className="mt-2 w-full border border-foreground/40 bg-transparent px-3 py-2 text-sm"
       />
       <div className="mt-4 flex flex-wrap items-center gap-3">
         <button
           type="button"
           disabled={photoCount >= 4}
           onClick={() => fileInput.current?.click()}
-          className="border border-foreground/20 px-3 py-2 text-[10px] tracking-[0.12em] uppercase disabled:opacity-40"
+          className="border border-foreground/40 px-3 py-2 text-[11px] tracking-[0.12em] uppercase disabled:opacity-40"
         >
           Add photos
         </button>
@@ -873,7 +875,7 @@ function ReviewEditor({
                 type="button"
                 aria-label="Remove photo"
                 onClick={() => setKept((current) => current.filter((image) => image !== src))}
-                className="absolute top-1 right-1 bg-background px-1 text-[10px]"
+                className="absolute top-1 right-1 bg-background px-1 text-[11px]"
               >
                 Remove
               </button>
@@ -908,7 +910,7 @@ function ReviewEditor({
         <button
           type="submit"
           disabled={saving || rating === null || text.trim().length === 0}
-          className="border border-foreground/20 px-6 py-3 text-[11px] tracking-[0.18em] uppercase disabled:opacity-40"
+          className="border border-foreground/40 px-6 py-3 text-[12px] tracking-[0.18em] uppercase disabled:opacity-40"
         >
           {saving ? "Saving" : submitLabel}
         </button>
@@ -916,7 +918,7 @@ function ReviewEditor({
           <button
             type="button"
             onClick={onCancel}
-            className="text-[11px] tracking-[0.16em] uppercase underline underline-offset-4"
+            className="text-[12px] tracking-[0.16em] uppercase underline underline-offset-4"
           >
             Cancel
           </button>
@@ -940,18 +942,21 @@ function ReviewPhotos({ images }: { images: string[] }) {
   );
 }
 
-function ReviewDate({ createdAt }: { createdAt: number }) {
-  const [label, setLabel] = useState("");
+function subscribeToNothing() {
+  return () => {};
+}
 
-  useEffect(() => {
-    setLabel(
+function ReviewDate({ createdAt }: { createdAt: number }) {
+  const label = useSyncExternalStore(
+    subscribeToNothing,
+    () =>
       new Date(createdAt).toLocaleDateString("en-US", {
         month: "long",
         day: "numeric",
         year: "numeric",
       }),
-    );
-  }, [createdAt]);
+    () => "",
+  );
 
   return (
     <time dateTime={new Date(createdAt).toISOString()} className="text-xs text-muted">
@@ -971,7 +976,7 @@ function Reviewer({ name, image }: { name: string | null; image: string | null }
         <img src={image} alt="" className="size-8 rounded-full object-cover" />
       ) : (
         <span
-          className="flex size-8 items-center justify-center rounded-full border border-foreground/20 text-xs"
+          className="flex size-8 items-center justify-center rounded-full border border-foreground/40 text-xs"
           aria-hidden="true"
         >
           {letter}
@@ -988,12 +993,12 @@ function StarRow({ value }: { value: number }) {
     <span className="relative inline-flex" aria-hidden="true">
       <span className="flex">
         {Array.from({ length: 5 }, (_, index) => (
-          <StarIcon key={index} className="size-4 fill-foreground/20" />
+          <StarIcon key={index} className="size-4 fill-foreground/35" />
         ))}
       </span>
       <span className="absolute inset-y-0 left-0 flex overflow-hidden" style={{ width }}>
         {Array.from({ length: 5 }, (_, index) => (
-          <StarIcon key={index} className="size-4 shrink-0 fill-foreground" />
+          <StarIcon key={index} className="size-4 shrink-0 fill-highlight" />
         ))}
       </span>
     </span>

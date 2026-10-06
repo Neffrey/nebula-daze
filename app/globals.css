@@ -1,18 +1,22 @@
 @import "tailwindcss";
 
+/*
+ * Contrast on --background / --surface (WCAG 2.2):
+ * foreground 15.8 / 13.4, muted 8.2 / 6.9, primary 5.6 / 4.7,
+ * highlight 8.3 / 7.0, danger 9.6 / 8.1; on-primary 6.0, on-highlight 8.9.
+ * Primary and highlight also differ in lightness so they stay distinct under
+ * protan, deutan, and tritan color vision; never rely on hue alone.
+ */
 :root {
-  --background: #f4f1eb;
-  --foreground: #141210;
-  --muted: #6f675e;
-  --surface: #e7e1d8;
-  color-scheme: light;
-}
-
-html.dark {
-  --background: #141210;
-  --foreground: #f4f1eb;
-  --muted: #b7aea3;
-  --surface: #2c2824;
+  --background: #15171c;
+  --foreground: #eef1f6;
+  --muted: #a8b0bd;
+  --surface: #23262e;
+  --primary: #338fff;
+  --on-primary: #0b0d12;
+  --highlight: #ff85de;
+  --on-highlight: #0b0d12;
+  --danger: #ffab5e;
   color-scheme: dark;
 }
 
@@ -21,10 +25,25 @@ html.dark {
   --color-foreground: var(--foreground);
   --color-muted: var(--muted);
   --color-surface: var(--surface);
-  --color-ink: #141210;
-  --color-cream: #f4f1eb;
+  --color-primary: var(--primary);
+  --color-on-primary: var(--on-primary);
+  --color-highlight: var(--highlight);
+  --color-on-highlight: var(--on-highlight);
+  --color-danger: var(--danger);
+  --color-ink: #0f1115;
+  --color-cream: #eef1f6;
   --font-sans: var(--font-geist-sans);
   --font-display: var(--font-display);
+  --text-xs: 0.8125rem;
+  --text-sm: 0.9375rem;
+  --text-base: 1.0625rem;
+  --text-lg: 1.1875rem;
+  --text-xl: 1.375rem;
+  --text-2xl: 1.625rem;
+  --text-3xl: 2rem;
+  --text-4xl: 2.5rem;
+  --text-5xl: 3.25rem;
+  --text-6xl: 4rem;
 }
 
 body {
@@ -33,6 +52,20 @@ body {
   font-family: var(--font-sans), Helvetica, Arial, sans-serif;
 }
 
-.font-display {
-  font-family: var(--font-display), Georgia, serif;
+:focus-visible {
+  outline: 2px solid var(--highlight);
+  outline-offset: 2px;
+}
+
+::selection {
+  background: var(--primary);
+  color: var(--on-primary);
+}
+
+@layer base {
+  .font-display {
+    font-family: var(--font-display), var(--font-geist-sans), Helvetica, Arial, sans-serif;
+    font-weight: 300;
+    letter-spacing: -0.01em;
+  }
 }

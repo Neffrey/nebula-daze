@@ -15,7 +15,7 @@ export default function ProductCatalog() {
   return (
     <div className="mt-10">
       <PrintifyPanel />
-      <h2 className="mt-12 text-[11px] tracking-[0.16em] uppercase">Current products</h2>
+      <h2 className="mt-12 text-[12px] tracking-[0.16em] uppercase">Current products</h2>
       {products === undefined ? (
         <p className="mt-6 text-sm text-muted">Loading</p>
       ) : products.length === 0 ? (
@@ -88,7 +88,7 @@ function PrintifyPanel() {
 
   return (
     <section>
-      <h2 className="text-[11px] tracking-[0.16em] uppercase">Printify</h2>
+      <h2 className="text-[12px] tracking-[0.16em] uppercase">Printify</h2>
       <p className="mt-3 max-w-xl text-sm leading-6 text-muted">
         Products, prices, colors, sizes, and mockups come from your Printify shop. Syncing replaces
         the catalog with what is in Printify. Paid orders are sent to Printify and wait for your
@@ -99,7 +99,7 @@ function PrintifyPanel() {
           type="button"
           disabled={busy !== null}
           onClick={() => run("sync")}
-          className="border border-foreground/20 px-6 py-3 text-[11px] tracking-[0.18em] uppercase disabled:opacity-40"
+          className="border border-foreground/40 px-6 py-3 text-[12px] tracking-[0.18em] uppercase disabled:opacity-40"
         >
           {busy === "sync" ? "Syncing" : "Sync from Printify"}
         </button>
@@ -107,7 +107,7 @@ function PrintifyPanel() {
           type="button"
           disabled={busy !== null}
           onClick={() => run("webhooks")}
-          className="border border-foreground/20 px-6 py-3 text-[11px] tracking-[0.18em] uppercase disabled:opacity-40"
+          className="border border-foreground/40 px-6 py-3 text-[12px] tracking-[0.18em] uppercase disabled:opacity-40"
         >
           {busy === "webhooks" ? "Connecting" : "Connect webhooks"}
         </button>

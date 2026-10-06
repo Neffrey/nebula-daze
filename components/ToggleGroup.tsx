@@ -23,7 +23,7 @@ export default function ToggleGroup<T extends string>({
 }) {
   return (
     <fieldset>
-      <legend className="text-[11px] tracking-[0.16em] uppercase">{label}</legend>
+      <legend className="text-[12px] tracking-[0.16em] uppercase">{label}</legend>
       {options.length === 0 ? (
         empty !== undefined ? <p className="mt-2 text-sm text-muted">{empty}</p> : null
       ) : (
@@ -43,7 +43,7 @@ export default function ToggleGroup<T extends string>({
                   )
                 }
                 className={`flex items-center gap-2 border px-3 py-2 text-sm ${
-                  on ? "border-foreground" : "border-foreground/20 text-muted"
+                  on ? "border-primary bg-primary text-on-primary" : "border-foreground/40 text-muted"
                 }`}
               >
                 {option.swatch}

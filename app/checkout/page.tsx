@@ -15,7 +15,7 @@ import { formatOrderNumber } from "@/lib/orderNumber";
 import { countryName } from "@/lib/countries";
 import { FREE_SHIPPING_MINIMUM } from "@/lib/shipping";
 
-const CHECKOUT_BAG_KEY = "narel-checkout-bag";
+const CHECKOUT_BAG_KEY = "nebula-daze-checkout-bag";
 
 export default function CheckoutPage() {
   const { lines, replace, clear } = useCart();
@@ -70,6 +70,8 @@ export default function CheckoutPage() {
     restored.current = true;
     const orderId = new URLSearchParams(window.location.search).get("order");
     if (orderId) {
+      // The query string and sessionStorage are only readable in the browser, after hydration.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setReturnOrderId(orderId as Id<"orders">);
       setReady(true);
       return;
@@ -161,7 +163,7 @@ export default function CheckoutPage() {
     <>
       <SiteHeader />
       <main className="mx-auto flex min-h-[70vh] w-full max-w-3xl flex-col px-6 py-16">
-        <p className="text-[11px] tracking-[0.22em] uppercase">Checkout</p>
+        <p className="text-[12px] tracking-[0.22em] uppercase">Checkout</p>
         {!ready || (returnOrderId !== null && payment === undefined) ? (
           <p className="mt-8 text-sm text-muted">Loading</p>
         ) : payment?.paid ? (
@@ -195,21 +197,21 @@ export default function CheckoutPage() {
                   />
                   <button
                     type="button"
-                    className="mt-2 bg-foreground py-3 text-[11px] tracking-[0.22em] text-background uppercase disabled:opacity-50"
+                    className="mt-2 bg-primary py-3 text-[12px] tracking-[0.22em] text-on-primary uppercase disabled:opacity-50"
                     disabled={placing}
                     onClick={placeSaved}
                   >
                     {placing ? "Please wait" : "Pay with card"}
                   </button>
-                  {error && <p className="text-sm text-rose-800">{error}</p>}
+                  {error && <p className="text-sm text-danger">{error}</p>}
                 </>
               ) : (
             <form className="flex flex-col gap-4" onSubmit={place}>
               <Field label="Recipient name" name="shipName" autoComplete="name" defaultValue={profile.name ?? ""} />
-              <label className="text-[11px] tracking-[0.16em] uppercase">
+              <label className="text-[12px] tracking-[0.16em] uppercase">
                 Address
                 <AddressAutocomplete
-                  className="mt-2 w-full border border-foreground/20 bg-transparent px-3 py-3 text-sm tracking-normal normal-case outline-none"
+                  className="mt-2 w-full border border-foreground/40 bg-transparent px-3 py-3 text-sm tracking-normal normal-case outline-none"
                   value={addressLine}
                   required
                   onChange={setAddressLine}
@@ -235,10 +237,10 @@ export default function CheckoutPage() {
                   }}
                 />
               </label>
-              <label className="text-[11px] tracking-[0.16em] uppercase">
+              <label className="text-[12px] tracking-[0.16em] uppercase">
                 Apartment, suite, or unit
                 <input
-                  className="mt-2 w-full border border-foreground/20 bg-transparent px-3 py-3 text-sm tracking-normal normal-case outline-none"
+                  className="mt-2 w-full border border-foreground/40 bg-transparent px-3 py-3 text-sm tracking-normal normal-case outline-none"
                   name="addressLine2"
                   autoComplete="address-line2"
                   value={addressLine2}
@@ -247,10 +249,10 @@ export default function CheckoutPage() {
                   }}
                 />
               </label>
-              <label className="text-[11px] tracking-[0.16em] uppercase">
+              <label className="text-[12px] tracking-[0.16em] uppercase">
                 City
                 <input
-                  className="mt-2 w-full border border-foreground/20 bg-transparent px-3 py-3 text-sm tracking-normal normal-case outline-none"
+                  className="mt-2 w-full border border-foreground/40 bg-transparent px-3 py-3 text-sm tracking-normal normal-case outline-none"
                   name="city"
                   autoComplete="address-level2"
                   required
@@ -260,10 +262,10 @@ export default function CheckoutPage() {
                   }}
                 />
               </label>
-              <label className="text-[11px] tracking-[0.16em] uppercase">
+              <label className="text-[12px] tracking-[0.16em] uppercase">
                 State / Province
                 <input
-                  className="mt-2 w-full border border-foreground/20 bg-transparent px-3 py-3 text-sm tracking-normal normal-case outline-none"
+                  className="mt-2 w-full border border-foreground/40 bg-transparent px-3 py-3 text-sm tracking-normal normal-case outline-none"
                   name="region"
                   autoComplete="address-level1"
                   required
@@ -273,10 +275,10 @@ export default function CheckoutPage() {
                   }}
                 />
               </label>
-              <label className="text-[11px] tracking-[0.16em] uppercase">
+              <label className="text-[12px] tracking-[0.16em] uppercase">
                 Postal code
                 <input
-                  className="mt-2 w-full border border-foreground/20 bg-transparent px-3 py-3 text-sm tracking-normal normal-case outline-none"
+                  className="mt-2 w-full border border-foreground/40 bg-transparent px-3 py-3 text-sm tracking-normal normal-case outline-none"
                   name="postalCode"
                   autoComplete="postal-code"
                   required
@@ -286,10 +288,10 @@ export default function CheckoutPage() {
                   }}
                 />
               </label>
-              <label className="text-[11px] tracking-[0.16em] uppercase">
+              <label className="text-[12px] tracking-[0.16em] uppercase">
                 Country
                 <input
-                  className="mt-2 w-full border border-foreground/20 bg-transparent px-3 py-3 text-sm tracking-normal normal-case outline-none"
+                  className="mt-2 w-full border border-foreground/40 bg-transparent px-3 py-3 text-sm tracking-normal normal-case outline-none"
                   name="country"
                   autoComplete="country-name"
                   required
@@ -299,10 +301,10 @@ export default function CheckoutPage() {
                   }}
                 />
               </label>
-              <label className="text-[11px] tracking-[0.16em] uppercase">
+              <label className="text-[12px] tracking-[0.16em] uppercase">
                 Phone
                 <input
-                  className="mt-2 w-full border border-foreground/20 bg-transparent px-3 py-3 text-sm tracking-normal normal-case outline-none"
+                  className="mt-2 w-full border border-foreground/40 bg-transparent px-3 py-3 text-sm tracking-normal normal-case outline-none"
                   name="phone"
                   autoComplete="tel"
                   value={phone}
@@ -313,12 +315,12 @@ export default function CheckoutPage() {
               </label>
               <button
                 type="submit"
-                className="mt-2 bg-foreground py-3 text-[11px] tracking-[0.22em] text-background uppercase disabled:opacity-50"
+                className="mt-2 bg-primary py-3 text-[12px] tracking-[0.22em] text-on-primary uppercase disabled:opacity-50"
                 disabled={placing}
               >
                 {placing ? "Please wait" : "Pay with card"}
               </button>
-              {error && <p className="text-sm text-rose-800">{error}</p>}
+              {error && <p className="text-sm text-danger">{error}</p>}
             </form>
               )}
             </div>
@@ -342,10 +344,10 @@ function Field({
   defaultValue?: string;
 }) {
   return (
-    <label className="text-[11px] tracking-[0.16em] uppercase">
+    <label className="text-[12px] tracking-[0.16em] uppercase">
       {label}
       <input
-        className="mt-2 w-full border border-foreground/20 bg-transparent px-3 py-3 text-sm tracking-normal normal-case outline-none"
+        className="mt-2 w-full border border-foreground/40 bg-transparent px-3 py-3 text-sm tracking-normal normal-case outline-none"
         name={name}
         autoComplete={autoComplete}
         defaultValue={defaultValue}
@@ -431,7 +433,7 @@ function Summary({
 }) {
   return (
     <aside>
-      <h2 className="text-[11px] tracking-[0.22em] uppercase">Your bag</h2>
+      <h2 className="text-[12px] tracking-[0.22em] uppercase">Your bag</h2>
       <ul className="mt-6 flex flex-col gap-4">
         {lines.map((line) => (
           <li key={line.key} className="flex justify-between gap-4 text-sm">
@@ -570,7 +572,7 @@ function EmptyBag() {
       <h1 className="font-display text-5xl leading-none">Your bag is empty.</h1>
       <Link
         href="/"
-        className="mt-8 inline-block text-[11px] tracking-[0.18em] uppercase underline underline-offset-4"
+        className="mt-8 inline-block text-[12px] tracking-[0.18em] uppercase underline underline-offset-4"
       >
         Continue shopping
       </Link>
@@ -587,7 +589,7 @@ function SignInPrompt() {
       </p>
       <Link
         href="/signin?next=/checkout"
-        className="mt-8 inline-block bg-foreground px-6 py-3 text-[11px] tracking-[0.22em] text-background uppercase"
+        className="mt-8 inline-block bg-primary px-6 py-3 text-[12px] tracking-[0.22em] text-on-primary uppercase"
       >
         Sign in
       </Link>
@@ -615,7 +617,7 @@ function MissingPayment() {
       </p>
       <Link
         href="/"
-        className="mt-8 inline-block text-[11px] tracking-[0.18em] uppercase underline underline-offset-4"
+        className="mt-8 inline-block text-[12px] tracking-[0.18em] uppercase underline underline-offset-4"
       >
         Continue shopping
       </Link>
@@ -651,7 +653,7 @@ function Placed({
       <OrderAddress address={shippingAddress} />
       <Link
         href="/account"
-        className="mt-8 inline-block bg-foreground px-6 py-3 text-[11px] tracking-[0.22em] text-background uppercase"
+        className="mt-8 inline-block bg-primary px-6 py-3 text-[12px] tracking-[0.22em] text-on-primary uppercase"
       >
         View account
       </Link>

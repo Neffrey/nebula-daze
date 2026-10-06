@@ -71,7 +71,7 @@ export default function AccountPage() {
     <>
       <SiteHeader />
       <main className="mx-auto flex min-h-[70vh] w-full max-w-5xl flex-col px-6 py-16">
-        <p className="text-[11px] tracking-[0.22em] uppercase">Account</p>
+        <p className="text-[12px] tracking-[0.22em] uppercase">Account</p>
         {viewer === undefined ? (
           <p className="mt-8 text-sm text-muted">Loading</p>
         ) : viewer === null ? (
@@ -96,13 +96,13 @@ export default function AccountPage() {
 function SignedOut() {
   return (
     <div className="mt-8">
-      <h1 className="font-display text-5xl leading-none">Sign in to Narel</h1>
+      <h1 className="font-display text-5xl leading-none">Sign in to Nebula Daze</h1>
       <p className="mt-4 max-w-md text-sm leading-6 text-muted">
         Your orders and client details live here once you are signed in.
       </p>
       <Link
         href="/signin?next=/account"
-        className="mt-8 inline-block bg-foreground px-6 py-3 text-[11px] tracking-[0.22em] text-background uppercase"
+        className="mt-8 inline-block bg-primary px-6 py-3 text-[12px] tracking-[0.22em] text-on-primary uppercase"
       >
         Sign in
       </Link>
@@ -149,7 +149,7 @@ function SignedIn({
                   href={`/account?section=${sectionQuery(item)}`}
                   scroll={false}
                   aria-current={selected ? "page" : undefined}
-                  className={`block w-full border-l px-4 py-3 text-left text-[11px] tracking-[0.16em] uppercase ${
+                  className={`block w-full border-l px-4 py-3 text-left text-[12px] tracking-[0.16em] uppercase ${
                     selected
                       ? "border-foreground"
                       : "border-transparent text-muted"
@@ -190,7 +190,7 @@ function Orders() {
         <p className="font-display mt-8 text-4xl">No orders yet.</p>
         <Link
           href="/"
-          className="mt-6 inline-block text-[11px] tracking-[0.18em] uppercase underline underline-offset-4"
+          className="mt-6 inline-block text-[12px] tracking-[0.18em] uppercase underline underline-offset-4"
         >
           Continue shopping
         </Link>
@@ -266,7 +266,7 @@ function OrderStatus({
       className="border-b border-foreground/10 px-4 py-4"
     >
       <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1">
-        <p className="text-[11px] tracking-[0.16em] uppercase">
+        <p className="text-[12px] tracking-[0.16em] uppercase">
           Status <span className="text-muted">· {status.label}</span>
         </p>
         <p className="text-xs text-muted">
@@ -283,10 +283,10 @@ function OrderStatus({
           {orderSteps.map((entry, index) => (
             <li key={entry.step} aria-current={index === reached ? "step" : undefined}>
               <span
-                className={`block h-1 ${index <= reached ? "bg-foreground" : "bg-foreground/15"}`}
+                className={`block h-1 ${index <= reached ? "bg-primary" : "bg-foreground/15"}`}
               />
               <span
-                className={`mt-2 block text-[10px] tracking-[0.12em] uppercase ${
+                className={`mt-2 block text-[11px] tracking-[0.12em] uppercase ${
                   index <= reached ? "" : "text-muted"
                 }`}
               >
@@ -304,7 +304,7 @@ function OrderStatus({
 function ItemActions({ trackingUrl }: { trackingUrl: string | null }) {
   const href = trackingLink(trackingUrl);
   const actionClass =
-    "border border-foreground/20 px-3 py-2 text-left text-sm disabled:cursor-not-allowed disabled:text-muted";
+    "border border-foreground/40 px-3 py-2 text-left text-sm disabled:cursor-not-allowed disabled:text-muted";
 
   return (
     <div className="ml-auto flex shrink-0 flex-col gap-2">
@@ -384,7 +384,7 @@ function ShipTo({ address }: { address: OrderShippingAddress }) {
 
   return (
     <div className="relative" onMouseEnter={show} onMouseLeave={lingerThenFade}>
-      <p className="text-[11px] tracking-[0.16em] text-muted">Ship to</p>
+      <p className="text-[12px] tracking-[0.16em] text-muted">Ship to</p>
       <p className="mt-1 text-sm" tabIndex={0} onFocus={show} onBlur={lingerThenFade}>
         {address.name}
       </p>
@@ -413,7 +413,7 @@ function ShipTo({ address }: { address: OrderShippingAddress }) {
 function OrderFact({ label, children }: { label: string; children: string }) {
   return (
     <div>
-      <p className="text-[11px] tracking-[0.16em] text-muted">{label}</p>
+      <p className="text-[12px] tracking-[0.16em] text-muted">{label}</p>
       <p className="mt-1 text-sm">{children}</p>
     </div>
   );
@@ -621,7 +621,7 @@ function NewTicket() {
       />
       <button
         type="submit"
-        className="mt-6 border border-foreground/20 px-6 py-3 text-[11px] tracking-[0.22em] uppercase disabled:opacity-50"
+        className="mt-6 border border-foreground/40 px-6 py-3 text-[12px] tracking-[0.22em] uppercase disabled:opacity-50"
         disabled={saving || recent === undefined}
       >
         {saving ? "Sending" : "Send"}
@@ -733,7 +733,7 @@ function TicketRow({
             </span>
             {waiting ? (
               <FaCircleExclamation
-                className="size-4 shrink-0 text-red-600"
+                className="size-4 shrink-0 text-highlight"
                 aria-label="New reply"
               />
             ) : null}
@@ -778,8 +778,8 @@ function TicketLog({
             >
               {support ? <ChatAvatar image={entry.image} name={entry.name} /> : null}
               <div
-                className={`max-w-[75%] rounded-md px-3 py-2 text-sm leading-5 text-[#141210] ${
-                  support ? "bg-[#7ec8f0]" : "bg-[#ececec]"
+                className={`max-w-[75%] rounded-md px-3 py-2 text-sm leading-5 ${
+                  support ? "bg-primary text-on-primary" : "bg-surface text-foreground"
                 }`}
               >
                 <span className="sr-only">{support ? "Support" : "You"}. </span>
@@ -815,7 +815,9 @@ function TicketLog({
 
 function ChatImagePopup({ src, onClose }: { src: string; onClose: () => void }) {
   const onCloseRef = useRef(onClose);
-  onCloseRef.current = onClose;
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  });
 
   useEffect(() => {
     function onKey(event: KeyboardEvent) {
@@ -838,7 +840,7 @@ function ChatImagePopup({ src, onClose }: { src: string; onClose: () => void }) 
       <div role="dialog" aria-modal="true" aria-label="Attachment" className="relative">
         <button
           type="button"
-          className="absolute -top-8 right-0 text-[11px] tracking-[0.18em] text-white uppercase"
+          className="absolute -top-8 right-0 text-[12px] tracking-[0.18em] text-white uppercase"
           onClick={onClose}
         >
           Close
@@ -942,14 +944,14 @@ function TicketReply({
       <div className="mt-3 flex flex-wrap items-center gap-3">
         <button
           type="submit"
-          className="border border-foreground/20 px-6 py-3 text-[11px] tracking-[0.22em] uppercase disabled:opacity-50"
+          className="border border-foreground/40 px-6 py-3 text-[12px] tracking-[0.22em] uppercase disabled:opacity-50"
           disabled={busy}
         >
           {saving ? "Sending" : "Send"}
         </button>
         <button
           type="button"
-          className="border border-foreground/20 px-6 py-3 text-[11px] tracking-[0.22em] uppercase disabled:opacity-50"
+          className="border border-foreground/40 px-6 py-3 text-[12px] tracking-[0.22em] uppercase disabled:opacity-50"
           disabled={busy}
           onClick={() => {
             fileInput.current?.click();
@@ -960,7 +962,7 @@ function TicketReply({
         {notes ? (
           <button
             type="button"
-            className="border border-foreground/20 px-6 py-3 text-[11px] tracking-[0.22em] uppercase disabled:opacity-50"
+            className="border border-foreground/40 px-6 py-3 text-[12px] tracking-[0.22em] uppercase disabled:opacity-50"
             disabled={busy}
             onClick={() => {
               setNotesOpen(true);
@@ -972,7 +974,7 @@ function TicketReply({
         {notes && status === "active" ? (
           <button
             type="button"
-            className="border border-foreground/20 px-6 py-3 text-[11px] tracking-[0.22em] uppercase disabled:opacity-50"
+            className="border border-foreground/40 px-6 py-3 text-[12px] tracking-[0.22em] uppercase disabled:opacity-50"
             disabled={busy}
             onClick={() => {
               if (busy) {
@@ -1015,7 +1017,9 @@ function InternalNotes({ ticketId, onClose }: { ticketId: Id<"tickets">; onClose
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const onCloseRef = useRef(onClose);
-  onCloseRef.current = onClose;
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  });
 
   useEffect(() => {
     function onKey(event: KeyboardEvent) {
@@ -1037,7 +1041,7 @@ function InternalNotes({ ticketId, onClose }: { ticketId: Id<"tickets">; onClose
       <button
         type="button"
         aria-label="Close internal notes"
-        className="absolute inset-0 bg-foreground/40"
+        className="absolute inset-0 bg-black/60"
         onClick={onClose}
       />
       <div
@@ -1047,10 +1051,10 @@ function InternalNotes({ ticketId, onClose }: { ticketId: Id<"tickets">; onClose
         className="relative max-h-[min(40rem,calc(100vh-2rem))] w-full max-w-lg overflow-y-auto bg-background p-6 sm:p-8"
       >
         <div className="flex items-center justify-between gap-4">
-          <h2 id="internal-notes-title" className="text-[11px] tracking-[0.22em] uppercase">
+          <h2 id="internal-notes-title" className="text-[12px] tracking-[0.22em] uppercase">
             Internal notes
           </h2>
-          <button type="button" className="text-[11px] tracking-[0.18em] uppercase" onClick={onClose}>
+          <button type="button" className="text-[12px] tracking-[0.18em] uppercase" onClick={onClose}>
             Close
           </button>
         </div>
@@ -1092,7 +1096,7 @@ function InternalNotes({ ticketId, onClose }: { ticketId: Id<"tickets">; onClose
           />
           <button
             type="submit"
-            className="mt-3 border border-foreground/20 px-6 py-3 text-[11px] tracking-[0.22em] uppercase disabled:opacity-50"
+            className="mt-3 border border-foreground/40 px-6 py-3 text-[12px] tracking-[0.22em] uppercase disabled:opacity-50"
             disabled={saving}
           >
             {saving ? "Saving" : "Add note"}
@@ -1110,8 +1114,8 @@ function InternalNotes({ ticketId, onClose }: { ticketId: Id<"tickets">; onClose
               >
                 {entry.mine ? null : <ChatAvatar image={entry.image} name={entry.name} />}
                 <p
-                  className={`max-w-[75%] rounded-md px-3 py-2 text-sm leading-5 text-[#141210] ${
-                    entry.mine ? "bg-[#ececec]" : "bg-[#7ec8f0]"
+                  className={`max-w-[75%] rounded-md px-3 py-2 text-sm leading-5 ${
+                    entry.mine ? "bg-surface text-foreground" : "bg-primary text-on-primary"
                   }`}
                 >
                   <span className="sr-only">{entry.mine ? "You" : "Support"}. </span>
@@ -1138,18 +1142,18 @@ function ChatAvatar({ image, name }: { image: string | null; name: string | null
         <img
           src={image}
           alt=""
-          className="size-7 rounded-full border border-[#d0d0d0] object-cover"
+          className="size-7 rounded-full border border-foreground/40 object-cover"
         />
       ) : (
         <span
-          className="flex size-7 items-center justify-center rounded-full border border-[#d0d0d0] bg-white text-xs font-medium text-[#141210]"
+          className="flex size-7 items-center justify-center rounded-full border border-foreground/40 bg-surface text-xs font-medium text-foreground"
           aria-hidden="true"
         >
           {letter}
         </span>
       )}
       {label !== "" ? (
-        <span className="max-w-full truncate text-center text-[10px] leading-3 text-foreground">
+        <span className="max-w-full truncate text-center text-[11px] leading-3 text-foreground">
           {label}
         </span>
       ) : null}
@@ -1235,4 +1239,4 @@ function ticketError(error: unknown) {
 }
 
 const ticketFieldClass =
-  "w-full border border-foreground/20 bg-background px-3 py-3 text-sm outline-none";
+  "w-full border border-foreground/40 bg-background px-3 py-3 text-sm outline-none";

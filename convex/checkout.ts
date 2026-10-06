@@ -5,7 +5,7 @@ import { StripeSubscriptions } from "@convex-dev/stripe";
 import { v } from "convex/values";
 import { LOCAL_SITE_URL, PRODUCTION_SITE_URL } from "../lib/siteUrl";
 import { components, internal } from "./_generated/api";
-import { action } from "./_generated/server";
+import { action, env } from "./_generated/server";
 import { checkoutArgs } from "./orders";
 import { shippingCentsFor } from "./shipping";
 
@@ -26,9 +26,9 @@ export const pay = action({
       throw new Error("Sign in to place an order");
     }
     if (!allowedOrigins.has(args.origin)) {
-      throw new Error("Checkout must start from the Narel site");
+      throw new Error("Checkout must start from the Nebula Daze site");
     }
-    if (!process.env.STRIPE_SECRET_KEY || !process.env.STRIPE_WEBHOOK_SECRET) {
+    if (!env.STRIPE_SECRET_KEY || !env.STRIPE_WEBHOOK_SECRET) {
       throw new Error("Card payments are not configured yet");
     }
 

@@ -1,7 +1,7 @@
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
-import { action, internalAction } from "./_generated/server";
+import { action, env, internalAction } from "./_generated/server";
 import {
   normalizeProduct,
   printifyCredentials,
@@ -210,8 +210,8 @@ export const connectWebhooks = action({
   handler: async (ctx) => {
     await ctx.runQuery(internal.printifyData.assertAdmin, {});
     const credentials = await printifyCredentials();
-    const secret = process.env.PRINTIFY_WEBHOOK_SECRET;
-    const siteUrl = process.env.SITE_URL ?? process.env.CONVEX_SITE_URL;
+    const secret = env.PRINTIFY_WEBHOOK_SECRET;
+    const siteUrl = env.SITE_URL ?? env.CONVEX_SITE_URL;
     if (!secret || !siteUrl) {
       throw new Error("Set PRINTIFY_WEBHOOK_SECRET on the Convex deployment first.");
     }

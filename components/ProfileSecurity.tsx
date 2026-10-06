@@ -3,11 +3,10 @@
 import { useAuthActions } from "@convex-dev/auth/react";
 import { useMutation, useQuery } from "convex/react";
 import { useRouter } from "next/navigation";
-import { ChangeEvent, FormEvent, useEffect, useRef, useState, type ReactNode } from "react";
+import { ChangeEvent, useEffect, useRef, useState, type ReactNode } from "react";
 import SavedAddresses from "@/components/SavedAddresses";
 import { api } from "@/convex/_generated/api";
 import { siteUrlForHostname } from "@/lib/siteUrl";
-import { applyTheme, writeStoredTheme } from "@/lib/theme";
 import { uploadFiles } from "@/lib/uploadthing";
 
 export default function ProfileSecurity({ onSignOut }: { onSignOut: () => void }) {
@@ -59,54 +58,11 @@ export default function ProfileSecurity({ onSignOut }: { onSignOut: () => void }
       <GoogleLinkNotice googleLinked={googleLinked} />
       <button
         type="button"
-        className="mt-4 w-fit border border-foreground/20 px-6 py-3 text-[11px] tracking-[0.22em] uppercase"
+        className="mt-4 w-fit border border-foreground/40 px-6 py-3 text-[12px] tracking-[0.22em] uppercase"
         onClick={onSignOut}
       >
         Sign out
       </button>
-      <DarkModeSwitch theme={profile.theme} />
-    </div>
-  );
-}
-
-function DarkModeSwitch({ theme }: { theme: "light" | "dark" }) {
-  const saveTheme = useMutation(api.users.setTheme);
-  const [pending, setPending] = useState<"light" | "dark" | null>(null);
-  const selected = pending ?? theme;
-  const dark = selected === "dark";
-
-  useEffect(() => {
-    setPending(null);
-  }, [theme]);
-
-  function toggle() {
-    const next = dark ? "light" : "dark";
-    setPending(next);
-    applyTheme(next);
-    writeStoredTheme(next);
-    void saveTheme({ theme: next }).catch(() => {
-      setPending(null);
-      applyTheme(theme);
-      writeStoredTheme(theme);
-    });
-  }
-
-  return (
-    <div className="mt-10 flex items-center justify-between border-t border-foreground/10 pt-8">
-      <p className="text-sm">Light mode</p>
-      <button
-        type="button"
-        role="switch"
-        aria-checked={dark}
-        aria-label="Light mode or darkmode"
-        onClick={toggle}
-        className={`relative h-6 w-11 border border-foreground/30 ${dark ? "bg-foreground" : "bg-transparent"}`}
-      >
-        <span
-          className={`absolute top-0.5 size-4 ${dark ? "right-0.5 bg-background" : "left-0.5 bg-foreground"}`}
-        />
-      </button>
-      <p className="text-sm">Dark mode</p>
     </div>
   );
 }
@@ -115,14 +71,15 @@ function DisplayNameSetting({ value }: { value: string }) {
   const save = useMutation(api.users.updateDisplayName);
   const inputRef = useRef<HTMLInputElement>(null);
   const [draft, setDraft] = useState(value);
+  const [previousValue, setPreviousValue] = useState(value);
+  if (value !== previousValue) {
+    setPreviousValue(value);
+    setDraft(value);
+  }
   const [editing, setEditing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const dirty = draft !== value;
-
-  useEffect(() => {
-    setDraft(value);
-  }, [value]);
 
   useEffect(() => {
     if (editing) {
@@ -158,14 +115,14 @@ function DisplayNameSetting({ value }: { value: string }) {
           });
       }}
     >
-      <p className="text-[11px] tracking-[0.22em] text-muted uppercase">Display name</p>
+      <p className="text-[12px] tracking-[0.22em] text-muted uppercase">Display name</p>
       {editing ? (
         <h1 className="mt-3">
           <input
             ref={inputRef}
             id="profile-display-name"
             size={1}
-            className="font-display w-full min-w-0 max-w-full border-b border-foreground/30 bg-transparent text-5xl leading-none outline-none placeholder:text-foreground/25 sm:text-6xl"
+            className="font-display w-full min-w-0 max-w-full border-b border-foreground/40 bg-transparent text-5xl leading-none outline-none placeholder:text-muted sm:text-6xl"
             autoComplete="nickname"
             maxLength={40}
             placeholder="Your profile"
@@ -179,13 +136,13 @@ function DisplayNameSetting({ value }: { value: string }) {
       ) : (
         <div className="mt-3 flex min-w-0 items-end gap-4">
           <h1
-            className={`font-display min-w-0 text-5xl leading-none sm:text-6xl ${value ? "" : "text-foreground/25"}`}
+            className={`font-display min-w-0 text-5xl leading-none sm:text-6xl ${value ? "" : "text-muted"}`}
           >
             {value || "Your profile"}
           </h1>
           <button
             type="button"
-            className="mb-1 shrink-0 text-[11px] tracking-[0.16em] uppercase underline underline-offset-4"
+            className="mb-1 shrink-0 text-[12px] tracking-[0.16em] uppercase underline underline-offset-4"
             onClick={() => {
               setEditing(true);
             }}
@@ -199,7 +156,7 @@ function DisplayNameSetting({ value }: { value: string }) {
           {dirty ? <SaveButton saving={saving} className="" /> : null}
           <button
             type="button"
-            className="text-[11px] tracking-[0.16em] uppercase underline underline-offset-4"
+            className="text-[12px] tracking-[0.16em] uppercase underline underline-offset-4"
             onClick={cancel}
             disabled={saving}
           >
@@ -264,7 +221,7 @@ function ImageSetting({ image, initials }: { image: string | null; initials: str
           {initials}
         </div>
       )}
-      <label className="mt-3 block w-fit cursor-pointer text-[11px] tracking-[0.16em] uppercase underline underline-offset-4">
+      <label className="mt-3 block w-fit cursor-pointer text-[12px] tracking-[0.16em] uppercase underline underline-offset-4">
         {saving ? "Please wait" : "Change photo"}
         <input
           className="sr-only"
@@ -277,7 +234,7 @@ function ImageSetting({ image, initials }: { image: string | null; initials: str
       {image ? (
         <button
           type="button"
-          className="mt-2 block text-[11px] tracking-[0.16em] text-muted uppercase underline underline-offset-4"
+          className="mt-2 block text-[12px] tracking-[0.16em] text-muted uppercase underline underline-offset-4"
           onClick={() => {
             setError(null);
             void removeImage().catch((removeError: unknown) => {
@@ -362,7 +319,7 @@ function LinkedAccounts({
           {googleLinked ? null : (
             <button
               type="button"
-              className="mt-3 w-fit border border-foreground/20 px-6 py-3 text-[11px] tracking-[0.22em] uppercase disabled:opacity-50"
+              className="mt-3 w-fit border border-foreground/40 px-6 py-3 text-[12px] tracking-[0.22em] uppercase disabled:opacity-50"
               disabled={linking}
               onClick={() => {
                 setLinking(true);
@@ -410,6 +367,8 @@ function GoogleLinkNotice({ googleLinked }: { googleLinked: boolean }) {
       return;
     }
     if (!googleLinked) {
+      // The query string is only readable in the browser, after hydration.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setMessage(
         "Google was not linked. If that Google account already belongs to another profile, it was left unchanged.",
       );
@@ -422,14 +381,14 @@ function GoogleLinkNotice({ googleLinked }: { googleLinked: boolean }) {
   if (message === null) {
     return null;
   }
-  return <p className="mt-3 text-sm text-rose-800">{message}</p>;
+  return <p className="mt-3 text-sm text-danger">{message}</p>;
 }
 
 function UnlinkButton({ label, onClick }: { label: string; onClick: () => void }) {
   return (
     <button
       type="button"
-      className="mt-3 text-[11px] tracking-[0.16em] uppercase underline underline-offset-4"
+      className="mt-3 text-[12px] tracking-[0.16em] uppercase underline underline-offset-4"
       onClick={onClick}
     >
       {label}
@@ -440,7 +399,7 @@ function UnlinkButton({ label, onClick }: { label: string; onClick: () => void }
 function Setting({ title, children }: { title: string; children: ReactNode }) {
   return (
     <section className="border-t border-foreground/10 py-8 first:border-t-0 first:pt-0">
-      <h2 className="text-[11px] tracking-[0.16em] uppercase">{title}</h2>
+      <h2 className="text-[12px] tracking-[0.16em] uppercase">{title}</h2>
       <div className="mt-4">{children}</div>
     </section>
   );
@@ -458,7 +417,7 @@ function SaveButton({
   return (
     <button
       type="submit"
-      className={`${className} w-fit border border-foreground/20 px-6 py-3 text-[11px] tracking-[0.22em] uppercase disabled:opacity-50`}
+      className={`${className} w-fit border border-foreground/40 px-6 py-3 text-[12px] tracking-[0.22em] uppercase disabled:opacity-50`}
       disabled={saving}
     >
       {saving ? "Please wait" : label}
@@ -467,7 +426,7 @@ function SaveButton({
 }
 
 function ErrorText({ children }: { children: string }) {
-  return <p className="mt-3 text-sm text-rose-800">{children}</p>;
+  return <p className="mt-3 text-sm text-danger">{children}</p>;
 }
 
 function profileInitials(
@@ -490,4 +449,4 @@ function errorMessage(error: unknown) {
 }
 
 const inputClass =
-  "w-full border border-foreground/20 bg-transparent px-3 py-3 text-sm outline-none";
+  "w-full border border-foreground/40 bg-transparent px-3 py-3 text-sm outline-none";

@@ -23,27 +23,27 @@ export default function SiteHeader() {
 
   return (
     <>
-      <p className="bg-foreground px-4 py-2 text-center text-[11px] tracking-[0.22em] text-background uppercase">
+      <p className="bg-highlight px-4 py-2 text-center text-[12px] tracking-[0.22em] text-on-highlight uppercase">
         Complimentary shipping on orders over $200
       </p>
       <header className="sticky top-0 z-30 border-b border-foreground/10 bg-background/90 backdrop-blur-md">
         <div className="relative mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6">
           <button
             type="button"
-            className="text-[11px] tracking-[0.22em] uppercase lg:hidden"
+            className="text-[12px] tracking-[0.22em] uppercase lg:hidden"
             onClick={() => setMenuOpen(true)}
           >
             Menu
           </button>
           <nav className="hidden items-center gap-5 lg:flex">
-            <Link href="/products" className="text-[11px] tracking-[0.16em] uppercase">
+            <Link href="/products" className="text-[12px] tracking-[0.16em] uppercase">
               Shop all
             </Link>
             {categories.map((category) => (
               <a
                 key={category}
                 href={`/#${category.toLowerCase()}`}
-                className="text-[11px] tracking-[0.16em] uppercase"
+                className="text-[12px] tracking-[0.16em] uppercase"
               >
                 {category}
               </a>
@@ -51,15 +51,19 @@ export default function SiteHeader() {
           </nav>
           <Link
             href="/"
-            className="font-display absolute left-1/2 -translate-x-1/2 text-xl tracking-[0.28em] sm:text-2xl sm:tracking-[0.42em]"
+            className="font-display absolute left-1/2 -translate-x-1/2 text-base whitespace-nowrap tracking-[0.16em] sm:text-2xl sm:tracking-[0.32em]"
           >
-            NAREL
+            NEBULA DAZE
           </Link>
-          <div className="flex items-center gap-5 text-[11px] tracking-[0.16em] uppercase">
+          <div className="flex items-center gap-5 text-[12px] tracking-[0.16em] uppercase">
             {isLoading ? null : isAuthenticated ? (
-              <Link href="/account">Account</Link>
+              <Link href="/account" className="hidden sm:inline">
+                Account
+              </Link>
             ) : (
-              <Link href="/signin">Sign in</Link>
+              <Link href="/signin" className="hidden sm:inline">
+                Sign in
+              </Link>
             )}
             <button type="button" onClick={() => setBagOpen(true)}>
               Bag ({count})
@@ -71,10 +75,10 @@ export default function SiteHeader() {
       {menuOpen && (
         <div className="fixed inset-0 z-40 bg-background">
           <div className="flex h-16 items-center justify-between px-4">
-            <span className="font-display text-2xl tracking-[0.42em]">NAREL</span>
+            <span className="font-display text-base whitespace-nowrap tracking-[0.16em] sm:text-2xl sm:tracking-[0.32em]">NEBULA DAZE</span>
             <button
               type="button"
-              className="text-[11px] tracking-[0.18em] uppercase"
+              className="text-[12px] tracking-[0.18em] uppercase"
               onClick={() => setMenuOpen(false)}
             >
               Close
@@ -94,6 +98,15 @@ export default function SiteHeader() {
                 {category}
               </a>
             ))}
+            {isLoading ? null : (
+              <Link
+                href={isAuthenticated ? "/account" : "/signin"}
+                className="mt-4 text-[12px] tracking-[0.22em] uppercase underline underline-offset-4"
+                onClick={() => setMenuOpen(false)}
+              >
+                {isAuthenticated ? "Account" : "Sign in"}
+              </Link>
+            )}
           </nav>
         </div>
       )}
@@ -103,15 +116,15 @@ export default function SiteHeader() {
           <button
             type="button"
             aria-label="Close bag"
-            className="absolute inset-0 bg-foreground/40"
+            className="absolute inset-0 bg-black/60"
             onClick={() => setBagOpen(false)}
           />
           <aside className="absolute top-0 right-0 flex h-full w-full max-w-md flex-col bg-background p-6">
             <div className="flex items-center justify-between">
-              <h2 className="text-[11px] tracking-[0.22em] uppercase">Bag</h2>
+              <h2 className="text-[12px] tracking-[0.22em] uppercase">Bag</h2>
               <button
                 type="button"
-                className="text-[11px] tracking-[0.18em] uppercase"
+                className="text-[12px] tracking-[0.18em] uppercase"
                 onClick={() => setBagOpen(false)}
               >
                 Close
@@ -131,7 +144,7 @@ export default function SiteHeader() {
                       <p className="mt-1 text-sm text-muted">Qty {line.quantity}</p>
                       <button
                         type="button"
-                        className="mt-2 text-[11px] tracking-[0.16em] uppercase underline underline-offset-4"
+                        className="mt-2 text-[12px] tracking-[0.16em] uppercase underline underline-offset-4"
                         onClick={() => remove(line.key)}
                       >
                         Remove
@@ -153,7 +166,7 @@ export default function SiteHeader() {
                   </p>
                   <Link
                     href="/checkout"
-                    className="mt-6 block bg-foreground py-3 text-center text-[11px] tracking-[0.22em] text-background uppercase"
+                    className="mt-6 block bg-primary py-3 text-center text-[12px] tracking-[0.22em] text-on-primary uppercase"
                     onClick={() => setBagOpen(false)}
                   >
                     Checkout
@@ -162,7 +175,7 @@ export default function SiteHeader() {
               )}
               <a
                 href="#new"
-                className="mt-6 inline-block text-[11px] tracking-[0.18em] uppercase underline underline-offset-4"
+                className="mt-6 inline-block text-[12px] tracking-[0.18em] uppercase underline underline-offset-4"
                 onClick={() => setBagOpen(false)}
               >
                 Continue shopping

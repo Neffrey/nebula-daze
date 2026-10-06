@@ -23,7 +23,7 @@ export default function Collection() {
     <section className="mx-auto max-w-7xl px-4 py-16 sm:px-6">
       <div className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <p className="text-[11px] tracking-[0.22em] uppercase">New arrivals</p>
+          <p className="text-[12px] tracking-[0.22em] uppercase">New arrivals</p>
           <h2 className="font-display mt-2 text-4xl sm:text-5xl">
             The evening edit
           </h2>
@@ -34,7 +34,7 @@ export default function Collection() {
               key={category}
               id={category.toLowerCase()}
               type="button"
-              className={`text-[11px] tracking-[0.18em] uppercase ${
+              className={`text-[12px] tracking-[0.18em] uppercase ${
                 active === category
                   ? "underline underline-offset-4"
                   : "text-muted"
@@ -68,7 +68,7 @@ export default function Collection() {
                     <h3 className="font-display text-xl leading-tight">
                       {product.name}
                     </h3>
-                    <p className="mt-1 text-[11px] tracking-[0.16em] text-muted uppercase">
+                    <p className="mt-1 text-[12px] tracking-[0.16em] text-muted uppercase">
                       {product.category}
                     </p>
                   </div>
@@ -77,7 +77,7 @@ export default function Collection() {
                 <div className="mt-3 grid grid-cols-2 gap-2">
                   <Link
                     href={`/products/${product.slug}`}
-                    className="border border-foreground/20 px-2 py-2 text-center text-[10px] tracking-[0.12em] uppercase"
+                    className="border border-foreground/40 px-2 py-2 text-center text-[11px] tracking-[0.12em] uppercase"
                   >
                     View item
                   </Link>

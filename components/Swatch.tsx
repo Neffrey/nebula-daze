@@ -10,7 +10,7 @@ export default function Swatch({
   return (
     <span
       aria-hidden="true"
-      className={`block shrink-0 border border-foreground/20 ${className}`}
+      className={`block shrink-0 border border-foreground/40 ${className}`}
       style={{
         background:
           hex2 === undefined ? hex : `linear-gradient(to bottom right, ${hex} 50%, ${hex2} 50%)`,

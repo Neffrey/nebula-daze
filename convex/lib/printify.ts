@@ -1,18 +1,20 @@
+import { env } from "../_generated/server";
+
 const API_BASE = "https://api.printify.com/v1";
 
 export type PrintifyCredentials = { token: string; shopId: string };
 
 export async function printifyCredentials(): Promise<PrintifyCredentials> {
-  const token = process.env.PRINTIFY_API_TOKEN;
+  const token = env.PRINTIFY_API_TOKEN;
   if (!token) {
     throw new Error("Printify is not configured yet. Set PRINTIFY_API_TOKEN.");
   }
-  const configured = process.env.PRINTIFY_SHOP_ID;
+  const configured = env.PRINTIFY_SHOP_ID;
   if (configured) {
     return { token, shopId: configured };
   }
   const response = await fetch(`${API_BASE}/shops.json`, {
-    headers: { Authorization: `Bearer ${token}`, "User-Agent": "Narel" },
+    headers: { Authorization: `Bearer ${token}`, "User-Agent": "Nebula Daze" },
   });
   if (!response.ok) {
     throw new Error(`Printify ${response.status}: could not list shops`);
@@ -40,7 +42,7 @@ export async function printifyRequest(
     headers: {
       Authorization: `Bearer ${credentials.token}`,
       "Content-Type": "application/json;charset=utf-8",
-      "User-Agent": "Narel",
+      "User-Agent": "Nebula Daze",
     },
     body: init.body === undefined ? undefined : JSON.stringify(init.body),
   });

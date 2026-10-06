@@ -25,17 +25,16 @@ export default function AddressAutocomplete({
   const [open, setOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);
 
+  const visibleSuggestions = value.trim().length < 3 ? [] : suggestions;
+  const listOpen = open && visibleSuggestions.length > 0;
+
   useEffect(() => {
     if (skipSearch.current) {
       skipSearch.current = false;
-      setSuggestions([]);
-      setOpen(false);
       return;
     }
     const input = value.trim();
     if (input.length < 3) {
-      setSuggestions([]);
-      setOpen(false);
       return;
     }
     const controller = new AbortController();
@@ -108,18 +107,18 @@ export default function AddressAutocomplete({
   }
 
   function onKeyDown(event: KeyboardEvent<HTMLInputElement>) {
-    if (!open || suggestions.length === 0) {
+    if (!listOpen) {
       return;
     }
     if (event.key === "ArrowDown") {
       event.preventDefault();
-      setActiveIndex((index) => (index + 1) % suggestions.length);
+      setActiveIndex((index) => (index + 1) % visibleSuggestions.length);
     } else if (event.key === "ArrowUp") {
       event.preventDefault();
-      setActiveIndex((index) => (index - 1 + suggestions.length) % suggestions.length);
+      setActiveIndex((index) => (index - 1 + visibleSuggestions.length) % visibleSuggestions.length);
     } else if (event.key === "Enter") {
       event.preventDefault();
-      const suggestion = suggestions[activeIndex];
+      const suggestion = visibleSuggestions[activeIndex];
       if (suggestion !== undefined) {
         choose(suggestion);
       }
@@ -134,7 +133,7 @@ export default function AddressAutocomplete({
         className={className}
         name="addressLine"
         role="combobox"
-        aria-expanded={open}
+        aria-expanded={listOpen}
         aria-controls={listId}
         aria-autocomplete="list"
         autoComplete="off"
@@ -146,7 +145,7 @@ export default function AddressAutocomplete({
         }}
         onKeyDown={onKeyDown}
         onFocus={() => {
-          if (suggestions.length > 0) {
+          if (visibleSuggestions.length > 0) {
             setOpen(true);
           }
         }}
@@ -154,15 +153,15 @@ export default function AddressAutocomplete({
           setOpen(false);
         }}
       />
-      {open ? (
-        <ul id={listId} role="listbox" className="border border-t-0 border-foreground/20 bg-background">
-          {suggestions.map((suggestion, index) => (
+      {listOpen ? (
+        <ul id={listId} role="listbox" className="border border-t-0 border-foreground/40 bg-background">
+          {visibleSuggestions.map((suggestion, index) => (
             <li key={suggestion.placeId} role="presentation">
               <button
                 type="button"
                 role="option"
                 aria-selected={index === activeIndex}
-                className={`block w-full px-3 py-3 text-left text-sm ${index === activeIndex ? "bg-foreground/5" : ""}`}
+                className={`block w-full px-3 py-3 text-left text-sm ${index === activeIndex ? "bg-primary text-on-primary" : ""}`}
                 onMouseDown={(event) => {
                   event.preventDefault();
                 }}
@@ -178,6 +177,7 @@ export default function AddressAutocomplete({
             </li>
           ))}
           <li className="flex justify-end px-3 py-2">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src="https://maps.gstatic.com/mapfiles/api-3/images/powered-by-google-on-white3.png"
               alt="Powered by Google"

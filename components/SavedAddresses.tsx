@@ -45,7 +45,7 @@ export default function SavedAddresses({
     <section>
       {shownAddress ? (
         <div>
-          <p className="text-[11px] tracking-[0.16em] uppercase">{shownAddress.label}</p>
+          <p className="text-[12px] tracking-[0.16em] uppercase">{shownAddress.label}</p>
           <AddressLines address={shownAddress} />
         </div>
       ) : (
@@ -123,7 +123,7 @@ function EditAddresses({
       )}
       {newAddress ? (
         <div className="border-t border-foreground/10 pt-8">
-          <p className="text-[11px] tracking-[0.22em] uppercase">New address</p>
+          <p className="text-[12px] tracking-[0.22em] uppercase">New address</p>
           <AddressForm onSaved={onNewAddressSaved} />
         </div>
       ) : null}
@@ -151,13 +151,13 @@ function SavedAddressView({
 
   return (
     <div>
-      <p className="text-[11px] tracking-[0.16em] uppercase">{address.label}</p>
+      <p className="text-[12px] tracking-[0.16em] uppercase">{address.label}</p>
       <AddressLines address={address} />
       <div className="mt-3 flex flex-wrap items-center gap-4">
-        {address.isDefault ? <span className="text-[11px] tracking-[0.16em] uppercase">Default</span> : null}
+        {address.isDefault ? <span className="text-[12px] tracking-[0.16em] uppercase">Default</span> : null}
         {checkout ? (
           shipping ? (
-            <span className="text-[11px] tracking-[0.16em] uppercase">Shipping</span>
+            <span className="text-[12px] tracking-[0.16em] uppercase">Shipping</span>
           ) : (
             <button type="button" className={textButtonClass} onClick={onUse}>
               Use this address
@@ -365,7 +365,9 @@ function AddressForm({
 
 function Popup({ title, onClose, children }: { title: string; onClose: () => void; children: ReactNode }) {
   const onCloseRef = useRef(onClose);
-  onCloseRef.current = onClose;
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  });
 
   useEffect(() => {
     function onKey(event: KeyboardEvent) {
@@ -384,7 +386,7 @@ function Popup({ title, onClose, children }: { title: string; onClose: () => voi
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <button type="button" aria-label="Close" className="absolute inset-0 bg-foreground/40" onClick={onClose} />
+      <button type="button" aria-label="Close" className="absolute inset-0 bg-black/60" onClick={onClose} />
       <div
         role="dialog"
         aria-modal="true"
@@ -392,10 +394,10 @@ function Popup({ title, onClose, children }: { title: string; onClose: () => voi
         className="relative max-h-[min(40rem,calc(100vh-2rem))] w-full max-w-lg overflow-y-auto bg-background p-6 sm:p-8"
       >
         <div className="flex items-center justify-between gap-4">
-          <h2 id="address-dialog-title" className="text-[11px] tracking-[0.22em] uppercase">
+          <h2 id="address-dialog-title" className="text-[12px] tracking-[0.22em] uppercase">
             {title}
           </h2>
-          <button type="button" className="text-[11px] tracking-[0.18em] uppercase" onClick={onClose}>
+          <button type="button" className="text-[12px] tracking-[0.18em] uppercase" onClick={onClose}>
             Close
           </button>
         </div>
@@ -429,7 +431,7 @@ function SaveButton({ saving }: { saving: boolean }) {
   return (
     <button
       type="submit"
-      className="w-fit border border-foreground/20 px-6 py-3 text-[11px] tracking-[0.22em] uppercase disabled:opacity-50"
+      className="w-fit border border-foreground/40 px-6 py-3 text-[12px] tracking-[0.22em] uppercase disabled:opacity-50"
       disabled={saving}
     >
       {saving ? "Please wait" : "Save"}
@@ -438,15 +440,15 @@ function SaveButton({ saving }: { saving: boolean }) {
 }
 
 function ErrorText({ children }: { children: string }) {
-  return <p className="mt-3 text-sm text-rose-800">{children}</p>;
+  return <p className="mt-3 text-sm text-danger">{children}</p>;
 }
 
 function errorMessage(error: unknown) {
   return error instanceof Error ? error.message : "Unable to save";
 }
 
-const inputClass = "w-full border border-foreground/20 bg-transparent px-3 py-3 text-sm outline-none";
+const inputClass = "w-full border border-foreground/40 bg-transparent px-3 py-3 text-sm outline-none";
 
-const outlineButtonClass = "border border-foreground/20 px-6 py-3 text-[11px] tracking-[0.22em] uppercase";
+const outlineButtonClass = "border border-foreground/40 px-6 py-3 text-[12px] tracking-[0.22em] uppercase";
 
-const textButtonClass = "text-[11px] tracking-[0.16em] uppercase underline underline-offset-4";
+const textButtonClass = "text-[12px] tracking-[0.16em] uppercase underline underline-offset-4";

@@ -30,6 +30,12 @@ import type { DataModel } from "./dataModel.js";
 type Env = {
   readonly CONVEX_CLOUD_URL: string;
   readonly CONVEX_SITE_URL: string;
+  readonly PRINTIFY_API_TOKEN: string | undefined;
+  readonly PRINTIFY_SHOP_ID: string | undefined;
+  readonly PRINTIFY_WEBHOOK_SECRET: string | undefined;
+  readonly SITE_URL: string | undefined;
+  readonly STRIPE_SECRET_KEY: string | undefined;
+  readonly STRIPE_WEBHOOK_SECRET: string | undefined;
 };
 
 /**

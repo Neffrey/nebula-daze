@@ -2,7 +2,7 @@ import { registerRoutes } from "@convex-dev/stripe";
 import { httpRouter } from "convex/server";
 import { components, internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
-import { httpAction } from "./_generated/server";
+import { env, httpAction } from "./_generated/server";
 import { auth } from "./auth";
 import { verifySignature } from "./lib/printify";
 
@@ -27,7 +27,7 @@ http.route({
   path: "/printify/webhook",
   method: "POST",
   handler: httpAction(async (ctx, request) => {
-    const secret = process.env.PRINTIFY_WEBHOOK_SECRET;
+    const secret = env.PRINTIFY_WEBHOOK_SECRET;
     const body = await request.text();
     if (!secret || !(await verifySignature(secret, body, request.headers.get("x-pfy-signature")))) {
       return new Response("Invalid signature", { status: 401 });
@@ -42,7 +42,7 @@ http.route({
     const resourceId = event.resource?.id === undefined ? null : String(event.resource.id);
     const data = event.resource?.data ?? null;
     const shopId = data?.shop_id;
-    const expectedShopId = process.env.PRINTIFY_SHOP_ID;
+    const expectedShopId = env.PRINTIFY_SHOP_ID;
     if (shopId !== undefined && expectedShopId && String(shopId) !== expectedShopId) {
       return new Response(null, { status: 200 });
     }

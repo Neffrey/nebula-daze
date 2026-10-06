@@ -21,7 +21,7 @@ type Sort = (typeof sorts)[number]["value"];
 type CategoryOption = { _id: string; name: string; parentId?: string };
 
 const fieldClass =
-  "block w-full border border-foreground/20 bg-transparent px-3 py-2 text-sm tracking-normal normal-case outline-none focus:border-foreground";
+  "block w-full border border-foreground/40 bg-transparent px-3 py-2 text-sm tracking-normal normal-case outline-none focus:border-foreground";
 
 export default function ProductBrowser() {
   const products = useQuery(api.products.catalog);
@@ -115,11 +115,11 @@ export default function ProductBrowser() {
     <div>
       <div className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <p className="text-[11px] tracking-[0.22em] uppercase">The collection</p>
+          <p className="text-[12px] tracking-[0.22em] uppercase">The collection</p>
           <h1 className="font-display mt-2 text-5xl leading-none sm:text-6xl">Shop all</h1>
         </div>
         <div className="w-full sm:w-56">
-          <label className="text-[11px] tracking-[0.16em] uppercase" htmlFor="catalog-sort">
+          <label className="text-[12px] tracking-[0.16em] uppercase" htmlFor="catalog-sort">
             Sort
           </label>
           <Select<Sort>
@@ -160,7 +160,7 @@ export default function ProductBrowser() {
           type="button"
           aria-expanded={filtersOpen}
           onClick={() => setFiltersOpen((open) => !open)}
-          className="border border-foreground/20 px-4 py-2 text-[11px] tracking-[0.16em] uppercase"
+          className="border border-foreground/40 px-4 py-2 text-[12px] tracking-[0.16em] uppercase"
         >
           Filters{activeCount > 0 ? ` (${activeCount})` : ""}
         </button>
@@ -195,7 +195,7 @@ export default function ProductBrowser() {
             />
           ) : null}
           <fieldset>
-            <legend className="text-[11px] tracking-[0.16em] uppercase">Price</legend>
+            <legend className="text-[12px] tracking-[0.16em] uppercase">Price</legend>
             <div className="mt-2 flex items-center gap-2">
               <input
                 inputMode="numeric"
@@ -220,7 +220,7 @@ export default function ProductBrowser() {
             <button
               type="button"
               onClick={clearAll}
-              className="justify-self-start text-[11px] tracking-[0.16em] uppercase underline underline-offset-4"
+              className="justify-self-start text-[12px] tracking-[0.16em] uppercase underline underline-offset-4"
             >
               Clear all
             </button>
@@ -241,7 +241,7 @@ export default function ProductBrowser() {
                   <button
                     type="button"
                     onClick={clearAll}
-                    className="mt-6 text-[11px] tracking-[0.16em] uppercase underline underline-offset-4"
+                    className="mt-6 text-[12px] tracking-[0.16em] uppercase underline underline-offset-4"
                   >
                     Clear all
                   </button>
@@ -263,7 +263,7 @@ export default function ProductBrowser() {
                         <div className="mt-3 flex items-start justify-between gap-3">
                           <div className="min-w-0">
                             <h2 className="font-display text-xl leading-tight">{product.name}</h2>
-                            <p className="mt-1 text-[11px] tracking-[0.16em] text-muted uppercase">
+                            <p className="mt-1 text-[12px] tracking-[0.16em] text-muted uppercase">
                               {product.category}
                             </p>
                           </div>
@@ -294,7 +294,7 @@ export default function ProductBrowser() {
 
 function ResultCount({ count }: { count: number }) {
   return (
-    <p className="text-[11px] tracking-[0.16em] text-muted uppercase">
+    <p className="text-[12px] tracking-[0.16em] text-muted uppercase">
       {count} {count === 1 ? "piece" : "pieces"}
     </p>
   );
@@ -314,7 +314,7 @@ function CategoryFilter({
   }
   return (
     <fieldset>
-      <legend className="text-[11px] tracking-[0.16em] uppercase">Category</legend>
+      <legend className="text-[12px] tracking-[0.16em] uppercase">Category</legend>
       <ul className="mt-2 grid gap-1">
         {treeOrder(categories).map(({ category, depth }) => {
           const on = selected.includes(category._id);
@@ -327,7 +327,7 @@ function CategoryFilter({
                   onChange={() =>
                     onChange(on ? selected.filter((id) => id !== category._id) : [...selected, category._id])
                   }
-                  className="size-4 accent-foreground"
+                  className="size-4 accent-primary"
                 />
                 <span className={on ? "" : "text-muted"}>{category.name}</span>
               </label>

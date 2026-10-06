@@ -16,7 +16,6 @@ const users = defineTable({
   displayName: v.optional(v.string()),
   imageId: v.optional(v.id("_storage")),
   photoUrl: v.optional(v.string()),
-  theme: v.optional(v.union(v.literal("light"), v.literal("dark"))),
   role: v.optional(
     v.union(
       v.literal("user"),

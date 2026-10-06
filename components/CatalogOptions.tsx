@@ -22,9 +22,9 @@ type OptionRow<TId extends string> = {
 };
 
 const fieldClass =
-  "mt-2 block w-full border border-foreground/20 bg-transparent px-3 py-2 text-sm tracking-normal normal-case";
+  "mt-2 block w-full border border-foreground/40 bg-transparent px-3 py-2 text-sm tracking-normal normal-case";
 const buttonClass =
-  "border border-foreground/20 px-3 py-2 text-[10px] tracking-[0.12em] uppercase disabled:opacity-40";
+  "border border-foreground/40 px-3 py-2 text-[11px] tracking-[0.12em] uppercase disabled:opacity-40";
 
 export function CategoryManager() {
   const rows = useQuery(api.categories.manageList);
@@ -122,7 +122,7 @@ function OptionManager<TId extends string>({
 
   return (
     <div className="mt-10">
-      <h2 className="text-[11px] tracking-[0.16em] uppercase">Add a {noun}</h2>
+      <h2 className="text-[12px] tracking-[0.16em] uppercase">Add a {noun}</h2>
       <OptionForm
         idPrefix={`new-${noun}`}
         initial={{ name: "", hex: "#000000", hex2: null, parentId: "" }}
@@ -132,7 +132,7 @@ function OptionManager<TId extends string>({
         resetOnSubmit
         onSubmit={onCreate}
       />
-      <h2 className="mt-12 text-[11px] tracking-[0.16em] uppercase">Current {plural}</h2>
+      <h2 className="mt-12 text-[12px] tracking-[0.16em] uppercase">Current {plural}</h2>
       {rows.length === 0 ? (
         <p className="mt-6 text-sm text-muted">No {plural} yet.</p>
       ) : (
@@ -226,7 +226,7 @@ function OptionItem<TId extends string>({
               type="button"
               disabled={deleting}
               onClick={() => setConfirming(false)}
-              className="text-[10px] tracking-[0.12em] uppercase underline underline-offset-4 disabled:opacity-40"
+              className="text-[11px] tracking-[0.12em] uppercase underline underline-offset-4 disabled:opacity-40"
             >
               Cancel
             </button>
@@ -251,7 +251,7 @@ function OptionItem<TId extends string>({
           </>
         )}
       </div>
-      {error !== null ? <p className="mt-3 text-sm">{error}</p> : null}
+      {error !== null ? <p className="mt-3 text-sm text-danger">{error}</p> : null}
     </div>
   );
 }
@@ -302,7 +302,7 @@ function OptionForm<TId extends string>({
 
   return (
     <form onSubmit={submit} className="mt-6 grid gap-4">
-      <label className="text-[11px] tracking-[0.16em] uppercase" htmlFor={`${idPrefix}-name`}>
+      <label className="text-[12px] tracking-[0.16em] uppercase" htmlFor={`${idPrefix}-name`}>
         Name
         <input
           id={`${idPrefix}-name`}
@@ -313,7 +313,7 @@ function OptionForm<TId extends string>({
       </label>
       {parents !== undefined ? (
         <div>
-          <label className="text-[11px] tracking-[0.16em] uppercase" htmlFor={`${idPrefix}-parent`}>
+          <label className="text-[12px] tracking-[0.16em] uppercase" htmlFor={`${idPrefix}-parent`}>
             Parent category
           </label>
           <Select<TId | "none">
@@ -360,24 +360,24 @@ function OptionForm<TId extends string>({
               <button
                 type="button"
                 onClick={() => setDraft((current) => ({ ...current, hex2: null }))}
-                className="mt-3 text-[10px] tracking-[0.12em] uppercase underline underline-offset-4"
+                className="mt-3 text-[11px] tracking-[0.12em] uppercase underline underline-offset-4"
               >
                 Remove second color
               </button>
             </div>
           )}
-          <div className="flex items-center gap-3 text-[11px] tracking-[0.16em] uppercase">
+          <div className="flex items-center gap-3 text-[12px] tracking-[0.16em] uppercase">
             Preview
             <Swatch hex={draft.hex} hex2={draft.hex2 ?? undefined} />
           </div>
         </>
       ) : null}
-      {error !== null ? <p className="text-sm">{error}</p> : null}
+      {error !== null ? <p className="text-sm text-danger">{error}</p> : null}
       <div className="flex flex-wrap items-center gap-3">
         <button
           type="submit"
           disabled={saving}
-          className="border border-foreground/20 px-6 py-3 text-[11px] tracking-[0.18em] uppercase disabled:opacity-40"
+          className="border border-foreground/40 px-6 py-3 text-[12px] tracking-[0.18em] uppercase disabled:opacity-40"
         >
           {saving ? "Saving" : submitLabel}
         </button>
@@ -385,7 +385,7 @@ function OptionForm<TId extends string>({
           <button
             type="button"
             onClick={onCancel}
-            className="text-[11px] tracking-[0.16em] uppercase underline underline-offset-4"
+            className="text-[12px] tracking-[0.16em] uppercase underline underline-offset-4"
           >
             Cancel
           </button>
@@ -407,7 +407,7 @@ function HexField({
   onChange: (value: string) => void;
 }) {
   return (
-    <label className="block text-[11px] tracking-[0.16em] uppercase" htmlFor={id}>
+    <label className="block text-[12px] tracking-[0.16em] uppercase" htmlFor={id}>
       {label}
       <span className="mt-2 flex items-center gap-3">
         <input
@@ -415,13 +415,13 @@ function HexField({
           type="color"
           value={value}
           onChange={(event) => onChange(event.target.value)}
-          className="h-10 w-14 shrink-0 cursor-pointer border border-foreground/20 bg-transparent"
+          className="h-10 w-14 shrink-0 cursor-pointer border border-foreground/40 bg-transparent"
         />
         <input
           aria-label={`${label} hex value`}
           value={value}
           onChange={(event) => onChange(event.target.value)}
-          className="block w-full border border-foreground/20 bg-transparent px-3 py-2 text-sm tracking-normal normal-case"
+          className="block w-full border border-foreground/40 bg-transparent px-3 py-2 text-sm tracking-normal normal-case"
         />
       </span>
     </label>
