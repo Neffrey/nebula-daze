@@ -19,6 +19,7 @@ const listedProduct = v.object({
   price: v.number(),
   category: productCategory,
   image: v.string(),
+  images: v.array(v.string()),
 });
 
 const productDetail = listedProduct.extend({
@@ -30,13 +31,7 @@ export const list = query({
   returns: v.array(listedProduct),
   handler: async (ctx) => {
     const products = await ctx.db.query("products").take(40);
-    return products.map((product) => ({
-      name: product.name,
-      slug: product.slug,
-      price: product.price,
-      category: product.category,
-      image: product.image,
-    }));
+    return products.map((product) => presentProduct(product));
   },
 });
 
@@ -48,11 +43,7 @@ export const manageList = query({
     const products = await ctx.db.query("products").withIndex("by_name").take(40);
     return products.map((product) => ({
       _id: product._id,
-      name: product.name,
-      slug: product.slug,
-      price: product.price,
-      category: product.category,
-      image: product.image,
+      ...presentProduct(product),
     }));
   },
 });
@@ -62,7 +53,7 @@ export const create = mutation({
     name: v.string(),
     price: v.number(),
     category: productCategory,
-    image: v.string(),
+    images: v.array(v.string()),
   },
   returns: v.id("products"),
   handler: async (ctx, args) => {
@@ -70,12 +61,14 @@ export const create = mutation({
     const name = productName(args.name);
     const slug = productSlug(name);
     await assertSlugAvailable(ctx, slug);
+    const images = productImages(args.images);
     return await ctx.db.insert("products", {
       name,
       slug,
       price: productPrice(args.price),
       category: args.category,
-      image: productImage(args.image),
+      image: images[0] ?? "",
+      images,
     });
   },
 });
@@ -86,7 +79,7 @@ export const update = mutation({
     name: v.string(),
     price: v.number(),
     category: productCategory,
-    image: v.string(),
+    images: v.array(v.string()),
   },
   returns: v.null(),
   handler: async (ctx, args) => {
@@ -98,12 +91,14 @@ export const update = mutation({
     const name = productName(args.name);
     const slug = productSlug(name);
     await assertSlugAvailable(ctx, slug, product._id);
+    const images = productImages(args.images);
     await ctx.db.patch("products", product._id, {
       name,
       slug,
       price: productPrice(args.price),
       category: args.category,
-      image: productImage(args.image),
+      image: images[0] ?? product.image,
+      images,
     });
     return null;
   },
@@ -122,11 +117,7 @@ export const getBySlug = query({
     }
     return {
       _id: product._id,
-      name: product.name,
-      slug: product.slug,
-      price: product.price,
-      category: product.category,
-      image: product.image,
+      ...presentProduct(product),
     };
   },
 });
@@ -151,6 +142,7 @@ export const seed = internalMutation({
         price: item.price,
         category: item.category,
         image: item.image,
+        images: [item.image],
       };
       if (existing === null) {
         await ctx.db.insert("products", product);
@@ -203,6 +195,39 @@ function productPrice(value: number) {
     throw new Error("Enter a price in whole dollars");
   }
   return value;
+}
+
+const maxProductImages = 8;
+
+function presentProduct(product: {
+  name: string;
+  slug: string;
+  price: number;
+  category: "Tailoring" | "Evening" | "Knitwear" | "Accessories";
+  image: string;
+  images?: string[];
+}) {
+  const images =
+    product.images !== undefined && product.images.length > 0 ? product.images : [product.image];
+  return {
+    name: product.name,
+    slug: product.slug,
+    price: product.price,
+    category: product.category,
+    image: images[0] ?? product.image,
+    images,
+  };
+}
+
+function productImages(values: string[]) {
+  const images = values.map((value) => productImage(value));
+  if (images.length === 0) {
+    throw new Error("Add an image");
+  }
+  if (images.length > maxProductImages) {
+    throw new Error("Add up to 8 images");
+  }
+  return images;
 }
 
 function productImage(value: string) {

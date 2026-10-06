@@ -106,6 +106,7 @@ export default defineSchema({
       v.literal("Accessories"),
     ),
     image: v.string(),
+    images: v.optional(v.array(v.string())),
   })
     .index("by_slug", ["slug"])
     .index("by_name", ["name"]),

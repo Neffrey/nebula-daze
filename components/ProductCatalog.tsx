@@ -15,15 +15,17 @@ type ProductDraft = {
   name: string;
   price: string;
   category: Category;
-  image: string;
+  images: string[];
 };
 
 const emptyDraft: ProductDraft = {
   name: "",
   price: "",
   category: "Tailoring",
-  image: "",
+  images: [],
 };
+
+const maxImages = 8;
 
 export default function ProductCatalog() {
   const products = useQuery(api.products.manageList);
@@ -59,7 +61,7 @@ export default function ProductCatalog() {
                     name: product.name,
                     price: String(product.price),
                     category: product.category,
-                    image: product.image,
+                    images: product.images,
                   }}
                   submitLabel="Save product"
                   onCancel={() => setEditingId(null)}
@@ -72,7 +74,7 @@ export default function ProductCatalog() {
                 <div className="flex items-start gap-4">
                   {/* Product images may come from any https host. */}
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={product.image} alt="" className="size-20 shrink-0 object-cover" />
+                  <img src={product.images[0] ?? product.image} alt="" className="size-20 shrink-0 object-cover" />
                   <div className="min-w-0 flex-1">
                     <p className="font-display text-2xl leading-tight">{product.name}</p>
                     <p className="mt-1 text-sm text-muted">
@@ -109,37 +111,74 @@ function ProductForm({
   submitLabel: string;
   productId?: Id<"products">;
   onCancel?: () => void;
-  onSubmit: (draft: { name: string; price: number; category: Category; image: string }) => Promise<void>;
+  onSubmit: (draft: {
+    name: string;
+    price: number;
+    category: Category;
+    images: string[];
+  }) => Promise<void>;
 }) {
   const update = useMutation(api.products.update);
   const fileInput = useRef<HTMLInputElement>(null);
   const [draft, setDraft] = useState(initial);
+  const [imageUrl, setImageUrl] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [dragIndex, setDragIndex] = useState<number | null>(null);
+  const [overIndex, setOverIndex] = useState<number | null>(null);
+
+  function moveImage(from: number, to: number) {
+    setDraft((current) => {
+      if (from === to || from < 0 || to < 0 || from >= current.images.length || to >= current.images.length) {
+        return current;
+      }
+      const images = [...current.images];
+      const [moved] = images.splice(from, 1);
+      if (moved === undefined) {
+        return current;
+      }
+      images.splice(to, 0, moved);
+      return { ...current, images };
+    });
+  }
+
+  function addImage(url: string) {
+    const image = url.trim();
+    if (image.length === 0) {
+      return;
+    }
+    setDraft((current) => {
+      if (current.images.length >= maxImages) {
+        return current;
+      }
+      return { ...current, images: [...current.images, image] };
+    });
+  }
 
   async function chooseImage(event: ChangeEvent<HTMLInputElement>) {
-    const file = event.target.files?.[0];
+    const files = [...(event.target.files ?? [])];
     event.target.value = "";
-    if (file === undefined || saving) {
+    if (files.length === 0 || saving) {
       return;
     }
-    if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
-      setError("Use a PNG, JPG, or WebP image");
-      return;
-    }
-    if (file.size > 5 * 1024 * 1024) {
-      setError("Image must be under 5MB");
-      return;
+    for (const file of files) {
+      if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
+        setError("Use a PNG, JPG, or WebP image");
+        return;
+      }
+      if (file.size > 5 * 1024 * 1024) {
+        setError("Image must be under 5MB");
+        return;
+      }
     }
     setSaving(true);
     setError(null);
     try {
-      const uploaded = await uploadFiles("imageUploader", { files: [file] });
-      const photo = uploaded[0];
-      if (photo === undefined) {
-        throw new Error("Unable to upload the image");
-      }
-      setDraft((current) => ({ ...current, image: photo.ufsUrl }));
+      const uploaded = await uploadFiles("imageUploader", { files });
+      setDraft((current) => ({
+        ...current,
+        images: [...current.images, ...uploaded.map((file) => file.ufsUrl)].slice(0, maxImages),
+      }));
     } catch (uploadError: unknown) {
       setError(uploadError instanceof Error ? uploadError.message : "Unable to upload the image");
     } finally {
@@ -161,9 +200,10 @@ function ProductForm({
           name: draft.name,
           price,
           category: draft.category,
-          image: draft.image,
+          images: draft.images,
         });
         setDraft(emptyDraft);
+        setImageUrl("");
         return;
       }
       await update({
@@ -171,13 +211,13 @@ function ProductForm({
         name: draft.name,
         price,
         category: draft.category,
-        image: draft.image,
+        images: draft.images,
       });
       await onSubmit({
         name: draft.name,
         price,
         category: draft.category,
-        image: draft.image,
+        images: draft.images,
       });
     })().catch((submitError: unknown) => {
       setError(submitError instanceof Error ? submitError.message : "Unable to save the product");
@@ -224,38 +264,120 @@ function ProductForm({
           ))}
         </select>
       </label>
-      <label className="text-[11px] tracking-[0.16em] uppercase" htmlFor={`${idPrefix}-image`}>
-        Image
-        <input
-          id={`${idPrefix}-image`}
-          value={draft.image}
-          onChange={(event) => setDraft((current) => ({ ...current, image: event.target.value }))}
-          className="mt-2 block w-full border border-foreground/20 bg-transparent px-3 py-2 text-sm tracking-normal normal-case"
-        />
-      </label>
+      <div>
+        <label className="text-[11px] tracking-[0.16em] uppercase" htmlFor={`${idPrefix}-image`}>
+          Images
+        </label>
+        <div className="mt-2 flex gap-2">
+          <input
+            id={`${idPrefix}-image`}
+            value={imageUrl}
+            onChange={(event) => setImageUrl(event.target.value)}
+            className="block min-w-0 flex-1 border border-foreground/20 bg-transparent px-3 py-2 text-sm tracking-normal normal-case"
+          />
+          <button
+            type="button"
+            disabled={saving || draft.images.length >= maxImages}
+            onClick={() => {
+              addImage(imageUrl);
+              setImageUrl("");
+            }}
+            className="border border-foreground/20 px-3 py-2 text-[10px] tracking-[0.12em] uppercase disabled:opacity-40"
+          >
+            Add
+          </button>
+        </div>
+      </div>
       <div>
         <button
           type="button"
-          disabled={saving}
+          disabled={saving || draft.images.length >= maxImages}
           onClick={() => fileInput.current?.click()}
           className="border border-foreground/20 px-3 py-2 text-[10px] tracking-[0.12em] uppercase disabled:opacity-40"
         >
-          Upload image
+          Upload images
         </button>
         <input
           ref={fileInput}
           type="file"
           accept="image/png,image/jpeg,image/webp"
+          multiple
           className="sr-only"
           onChange={(event) => {
             void chooseImage(event);
           }}
         />
       </div>
-      {draft.image !== "" ? (
-        // The preview follows whatever https image was pasted or uploaded.
-        // eslint-disable-next-line @next/next/no-img-element
-        <img src={draft.image} alt="" className="size-24 object-cover" />
+      {draft.images.length > 1 ? (
+        <p className="text-[10px] tracking-[0.12em] uppercase text-muted">Drag an image to change its order</p>
+      ) : null}
+      {draft.images.length > 0 ? (
+        <ul className="flex flex-wrap gap-3">
+          {draft.images.map((src, imageIndex) => (
+            <li
+              key={`${src}-${imageIndex}`}
+              className={`w-24 ${overIndex === imageIndex && dragIndex !== imageIndex ? "ring-1 ring-foreground" : ""}`}
+              onDragOver={(event) => {
+                event.preventDefault();
+                if (dragIndex !== null) {
+                  setOverIndex(imageIndex);
+                }
+              }}
+              onDrop={(event) => {
+                event.preventDefault();
+                const from = Number(event.dataTransfer.getData("text/plain"));
+                if (!Number.isNaN(from)) {
+                  moveImage(from, imageIndex);
+                }
+                setDragIndex(null);
+                setOverIndex(null);
+              }}
+            >
+              <button
+                type="button"
+                draggable={!saving}
+                aria-label={`Drag image ${imageIndex + 1}`}
+                onDragStart={(event) => {
+                  setDragIndex(imageIndex);
+                  event.dataTransfer.effectAllowed = "move";
+                  event.dataTransfer.setData("text/plain", String(imageIndex));
+                }}
+                onDragEnd={() => {
+                  setDragIndex(null);
+                  setOverIndex(null);
+                }}
+                className={`block cursor-grab active:cursor-grabbing ${dragIndex === imageIndex ? "opacity-40" : ""}`}
+              >
+                {/* Product images may come from any https host. */}
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={src} alt="" draggable={false} className="size-24 object-cover" />
+              </button>
+              <div className="mt-1 flex justify-between text-[10px] tracking-[0.12em] uppercase">
+                <button
+                  type="button"
+                  aria-label={`Move image ${imageIndex + 1} earlier`}
+                  disabled={imageIndex === 0}
+                  onClick={() => moveImage(imageIndex, imageIndex - 1)}
+                  className="disabled:opacity-30"
+                >
+                  Earlier
+                </button>
+                <button
+                  type="button"
+                  aria-label={`Remove image ${imageIndex + 1}`}
+                  onClick={() =>
+                    setDraft((current) => ({
+                      ...current,
+                      images: current.images.filter((_, index) => index !== imageIndex),
+                    }))
+                  }
+                >
+                  Remove
+                </button>
+              </div>
+            </li>
+          ))}
+        </ul>
       ) : null}
       {error !== null ? <p className="text-sm">{error}</p> : null}
       <div className="flex flex-wrap items-center gap-3">

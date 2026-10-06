@@ -59,16 +59,7 @@ export default function ProductPage() {
               <span>{product.name}</span>
             </nav>
             <article className="mt-6 grid items-start gap-8 sm:grid-cols-[24rem_minmax(0,1fr)] sm:gap-10 md:grid-cols-[30rem_minmax(0,1fr)]">
-              <div className="relative aspect-square w-full overflow-hidden bg-surface">
-                <Image
-                  src={product.image}
-                  alt={product.name}
-                  fill
-                  priority
-                  sizes="480px"
-                  className="object-cover"
-                />
-              </div>
+              <ProductGallery key={product.slug} name={product.name} images={product.images} />
               <div className="min-w-0">
                 <h1 className="font-display text-4xl leading-[0.95] sm:text-5xl">
                   {product.name}
@@ -93,6 +84,70 @@ export default function ProductPage() {
         )}
       </main>
     </>
+  );
+}
+
+function ProductGallery({ name, images }: { name: string; images: string[] }) {
+  const [index, setIndex] = useState(0);
+  const current = images[index] ?? images[0];
+  if (current === undefined) {
+    return null;
+  }
+  const several = images.length > 1;
+
+  function show(next: number) {
+    const count = images.length;
+    setIndex(((next % count) + count) % count);
+  }
+
+  return (
+    <div>
+      <div className="relative aspect-square w-full overflow-hidden bg-surface">
+        {/* Gallery photos can be an uploaded image or any https link. */}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={current} alt={`${name}, image ${index + 1} of ${images.length}`} className="size-full object-cover" />
+        {several ? (
+          <>
+            <button
+              type="button"
+              aria-label="Previous image"
+              onClick={() => show(index - 1)}
+              className="absolute top-1/2 left-3 flex size-9 -translate-y-1/2 items-center justify-center border border-foreground/20 bg-background/80 text-lg"
+            >
+              ‹
+            </button>
+            <button
+              type="button"
+              aria-label="Next image"
+              onClick={() => show(index + 1)}
+              className="absolute top-1/2 right-3 flex size-9 -translate-y-1/2 items-center justify-center border border-foreground/20 bg-background/80 text-lg"
+            >
+              ›
+            </button>
+          </>
+        ) : null}
+      </div>
+      {several ? (
+        <ul className="mt-3 flex gap-2 overflow-x-auto">
+          {images.map((src, imageIndex) => (
+            <li key={`${src}-${imageIndex}`} className="shrink-0">
+              <button
+                type="button"
+                aria-label={`Show image ${imageIndex + 1}`}
+                aria-pressed={imageIndex === index}
+                onClick={() => setIndex(imageIndex)}
+                className={`block size-16 overflow-hidden border ${
+                  imageIndex === index ? "border-foreground" : "border-transparent opacity-70"
+                }`}
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={src} alt="" className="size-full object-cover" />
+              </button>
+            </li>
+          ))}
+        </ul>
+      ) : null}
+    </div>
   );
 }
 
