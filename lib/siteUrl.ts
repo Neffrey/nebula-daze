@@ -1,5 +1,5 @@
 export const LOCAL_SITE_URL = "http://localhost:3000";
-export const PRODUCTION_SITE_URL = "https://ecom-starter.neffrey.com";
+export const PRODUCTION_SITE_URL = "https://nebuladaze.com";
 
 const allowedOrigins = [LOCAL_SITE_URL, PRODUCTION_SITE_URL];
 
