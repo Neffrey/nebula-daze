@@ -15,7 +15,7 @@ export default function SignIn() {
   const router = useRouter();
 
   return (
-    <div className="mx-auto flex min-h-screen w-full max-w-md flex-col justify-center px-6 py-16">
+    <div className="mx-auto flex w-full flex-1 max-w-md flex-col justify-center px-6 py-16">
       <Link href="/" className="font-display text-center text-2xl whitespace-nowrap tracking-[0.2em] sm:text-3xl sm:tracking-[0.32em]">
         NEBULA DAZE
       </Link>

@@ -68,4 +68,28 @@ body {
     font-weight: 300;
     letter-spacing: -0.01em;
   }
+
+  :where(a, button, summary) {
+    transition:
+      color 150ms ease,
+      background-color 150ms ease,
+      border-color 150ms ease;
+  }
+}
+
+/* Unlayered so the hover state wins over color utilities; every interactive surface is dark, so magenta text stays readable. */
+@media (hover: hover) {
+  :where(a, button, summary):not(:disabled):hover {
+    color: var(--highlight);
+  }
+
+  :where(a, button)[class*="border-foreground"]:not(:disabled):hover {
+    border-color: var(--highlight);
+  }
+
+  :where(a, button).bg-primary:not(:disabled):hover {
+    background-color: var(--highlight);
+    border-color: var(--highlight);
+    color: var(--on-highlight);
+  }
 }

@@ -66,29 +66,6 @@ export default function Home() {
           </div>
         </section>
       </main>
-      <footer className="border-t border-foreground/10 px-4 py-14 sm:px-6">
-        <div className="mx-auto grid max-w-7xl gap-10 sm:grid-cols-3">
-          <div>
-            <p className="font-display text-2xl whitespace-nowrap tracking-[0.2em] sm:text-3xl sm:tracking-[0.28em]">NEBULA DAZE</p>
-            <p className="mt-3 max-w-xs text-sm leading-6 text-muted">
-              18 Mercer Street
-              <br />
-              New York
-            </p>
-          </div>
-          <div className="text-sm leading-8">
-            <p className="text-[12px] tracking-[0.18em] uppercase">Visit</p>
-            <p>Shipping</p>
-            <p>Returns</p>
-            <p>Stores</p>
-          </div>
-          <div className="text-sm leading-8">
-            <p className="text-[12px] tracking-[0.18em] uppercase">Client care</p>
-            <p>hello@example.com</p>
-            <p>Monday–Friday, 10–6 ET</p>
-          </div>
-        </div>
-      </footer>
     </>
   );
 }

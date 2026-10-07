@@ -23,10 +23,10 @@ export default function SiteHeader() {
 
   return (
     <>
-      <p className="bg-highlight px-4 py-2 text-center text-[12px] tracking-[0.22em] text-on-highlight uppercase">
+      <p className="font-display bg-highlight px-4 py-2 text-center text-[12px] tracking-[0.22em] text-on-highlight uppercase">
         Complimentary shipping on orders over $200
       </p>
-      <header className="sticky top-0 z-30 border-b border-foreground/10 bg-background/90 backdrop-blur-md">
+      <header className="font-display sticky top-0 z-30 border-b border-foreground/10 bg-background/90 backdrop-blur-md">
         <div className="relative mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6">
           <button
             type="button"
@@ -65,7 +65,7 @@ export default function SiteHeader() {
                 Sign in
               </Link>
             )}
-            <button type="button" onClick={() => setBagOpen(true)}>
+            <button type="button" className="uppercase" onClick={() => setBagOpen(true)}>
               Bag ({count})
             </button>
           </div>
@@ -73,7 +73,7 @@ export default function SiteHeader() {
       </header>
 
       {menuOpen && (
-        <div className="fixed inset-0 z-40 bg-background">
+        <div className="font-display fixed inset-0 z-40 bg-background">
           <div className="flex h-16 items-center justify-between px-4">
             <span className="font-display text-base whitespace-nowrap tracking-[0.16em] sm:text-2xl sm:tracking-[0.32em]">NEBULA DAZE</span>
             <button

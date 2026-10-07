@@ -4,6 +4,7 @@ import "./globals.css";
 import { ConvexAuthNextjsServerProvider } from "@convex-dev/auth/nextjs/server";
 import CartProvider from "@/components/CartProvider";
 import ConvexClientProvider from "@/components/ConvexClientProvider";
+import SiteFooter from "@/components/SiteFooter";
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
@@ -29,11 +30,12 @@ export default function RootLayout({
     <ConvexAuthNextjsServerProvider>
       <html lang="en">
         <body
-          className={`${geistSans.variable} ${display.variable} antialiased`}
+          className={`${geistSans.variable} ${display.variable} flex min-h-screen flex-col antialiased`}
         >
           <ConvexClientProvider>
             <CartProvider>{children}</CartProvider>
           </ConvexClientProvider>
+          <SiteFooter />
         </body>
       </html>
     </ConvexAuthNextjsServerProvider>
