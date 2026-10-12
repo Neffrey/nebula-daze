@@ -7,6 +7,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ChangeEvent, Suspense, useEffect, useRef, useState } from "react";
 import { CategoryManager, ColorManager, SizeManager } from "@/components/CatalogOptions";
+import ImageLibrary from "@/components/ImageLibrary";
 import OrderAddress, { type OrderShippingAddress } from "@/components/OrderAddress";
 import ProductCatalog from "@/components/ProductCatalog";
 import ProfileSecurity from "@/components/ProfileSecurity";
@@ -26,6 +27,7 @@ const sectionByQuery = {
   support: "Support",
   tickets: "Tickets",
   products: "Products",
+  images: "Images",
 } as const;
 
 type SectionQuery = keyof typeof sectionByQuery;
@@ -46,6 +48,9 @@ function sectionQuery(section: Section): SectionQuery {
   if (section === "Products") {
     return "products";
   }
+  if (section === "Images") {
+    return "images";
+  }
   return "profile";
 }
 
@@ -58,6 +63,9 @@ function visibleSection(value: string | null, role: AccountRole): SectionQuery {
   }
   if (value === "products" && hasAbility(role, "admin")) {
     return "products";
+  }
+  if (value === "images" && hasAbility(role, "admin")) {
+    return "images";
   }
   return "profile";
 }
@@ -125,7 +133,7 @@ function SignedIn({
   const items: readonly Section[] = [
     ...sections,
     ...(hasAbility(role, "support") ? (["Tickets"] as const) : []),
-    ...(hasAbility(role, "admin") ? (["Products"] as const) : []),
+    ...(hasAbility(role, "admin") ? (["Products", "Images"] as const) : []),
   ];
 
   useEffect(() => {
@@ -172,6 +180,7 @@ function SignedIn({
         {section === "Support" ? <Support /> : null}
         {section === "Tickets" ? <TicketQueue /> : null}
         {section === "Products" ? <ProductAdmin /> : null}
+        {section === "Images" ? <ImageLibrary /> : null}
       </section>
     </div>
   );
