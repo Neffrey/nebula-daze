@@ -1,14 +1,12 @@
 "use client";
 
-import { ChangeEvent, useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { maxImageNameLength, type LibraryImage } from "@/lib/imageLibrary";
-import { uploadFiles } from "@/lib/uploadthing";
+import { UploadDropzone } from "@/lib/uploadthing";
 
 const buttonClass =
   "border border-foreground/40 px-4 py-2 text-[12px] tracking-[0.16em] uppercase disabled:opacity-40";
 const fieldClass = "w-full border border-foreground/40 bg-background px-3 py-2 text-sm outline-none";
-const maxUploadCount = 10;
-const maxUploadBytes = 8 * 1024 * 1024;
 
 export default function ImageLibrary() {
   const [images, setImages] = useState<LibraryImage[] | null>(null);
@@ -70,67 +68,45 @@ export default function ImageLibrary() {
 }
 
 function ImageUploader({ onUploaded }: { onUploaded: () => Promise<void> }) {
-  const fileInput = useRef<HTMLInputElement>(null);
-  const [uploading, setUploading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
-
-  function upload(event: ChangeEvent<HTMLInputElement>) {
-    const files = Array.from(event.target.files ?? []);
-    event.target.value = "";
-    if (files.length === 0 || uploading) {
-      return;
-    }
-    if (files.length > maxUploadCount) {
-      setMessage(`Upload up to ${maxUploadCount} images at a time`);
-      return;
-    }
-    if (files.some((file) => !file.type.startsWith("image/"))) {
-      setMessage("Only image files can be uploaded");
-      return;
-    }
-    if (files.some((file) => file.size > maxUploadBytes)) {
-      setMessage("Each image must be under 8MB");
-      return;
-    }
-    setUploading(true);
-    setMessage(null);
-    void uploadFiles("adminImageUploader", { files })
-      .then(async (uploaded) => {
-        setMessage(`Uploaded ${uploaded.length} ${uploaded.length === 1 ? "image" : "images"}.`);
-        await onUploaded();
-      })
-      .catch((uploadError: unknown) => {
-        setMessage(errorMessage(uploadError));
-      })
-      .finally(() => {
-        setUploading(false);
-      });
-  }
 
   return (
     <section>
       <h2 className="text-[12px] tracking-[0.16em] uppercase">Upload</h2>
       <p className="mt-3 max-w-xl text-sm leading-6 text-muted">
-        Images are stored on UploadThing. Upload up to {maxUploadCount} at a time, 8MB each.
+        Images are stored on UploadThing. Drop up to 10 at a time, 8MB each.
       </p>
-      <button
-        type="button"
-        className={`mt-4 ${buttonClass} px-6 py-3`}
-        disabled={uploading}
-        onClick={() => {
-          fileInput.current?.click();
+      <UploadDropzone
+        endpoint="adminImageUploader"
+        config={{ mode: "auto" }}
+        uploadProgressGranularity="fine"
+        appearance={{
+          container: ({ isDragActive }) =>
+            `mt-4 rounded-none! border-foreground/40! py-12 ${
+              isDragActive ? "border-highlight! bg-highlight/10!" : "bg-surface/40"
+            }`,
+          uploadIcon: "size-10! text-muted!",
+          label:
+            "w-auto! text-[12px]! font-normal! tracking-[0.16em] text-foreground! uppercase hover:text-highlight! focus-within:ring-highlight! focus-within:ring-offset-background!",
+          allowedContent: "mt-1 text-muted!",
+          button:
+            "w-44! rounded-none! bg-primary! text-[12px]! tracking-[0.18em] text-on-primary! uppercase after:bg-highlight! focus-within:ring-highlight! focus-within:ring-offset-background! data-[state=readying]:opacity-50",
         }}
-      >
-        {uploading ? "Uploading" : "Choose images"}
-      </button>
-      <input
-        ref={fileInput}
-        type="file"
-        accept="image/*"
-        multiple
-        className="sr-only"
-        aria-label="Upload images"
-        onChange={upload}
+        content={{
+          label: ({ ready }) => (ready ? "Drop images here or click to choose" : "Loading"),
+          button: ({ ready, isUploading }) =>
+            isUploading ? null : ready ? "Choose images" : "Loading",
+        }}
+        onUploadBegin={() => {
+          setMessage(null);
+        }}
+        onClientUploadComplete={(uploaded) => {
+          setMessage(`Uploaded ${uploaded.length} ${uploaded.length === 1 ? "image" : "images"}.`);
+          void onUploaded();
+        }}
+        onUploadError={(uploadError) => {
+          setMessage(uploadError.message);
+        }}
       />
       {message === null ? null : <p className="mt-4 text-sm">{message}</p>}
     </section>
